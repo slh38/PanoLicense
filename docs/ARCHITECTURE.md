@@ -5,7 +5,7 @@ Kurallar (ne olacağı) [LICENSING_RULES.md](LICENSING_RULES.md)'dedir; bu dosya
 
 > 2026-11-22 karar değişikliği: ASP.NET Core + SQL Server + IIS yerine **Laravel + MySQL 8**, yayın **Linux VPS**
 > (Nginx + PHP-FPM; cPanel'de SSH/PHP 8.3 olmadığı için). Kod paylaşımlı hostinge taşınabilir kalır.
-> .NET yalnız istemci kütüphanesinde (PanoLicense.Client) kalır, çünkü PanoPOS .NET'tir.
+> .NET yalnız istemci kütüphanesinde (PanoLicense.Client) kalır ve PanoPOS gibi **.NET 8** (`net8.0`) hedefler.
 
 ## 1. Bileşenler ve sorumluluk ayrımı
 
@@ -28,7 +28,7 @@ Kurallar (ne olacağı) [LICENSING_RULES.md](LICENSING_RULES.md)'dedir; bu dosya
 |---|---|---|
 | **Api (Laravel)** | Tek otorite: lisans kararı, cihaz kotası, imzalama, yetki, denetim logu, panelin sunulması. | Ürün iş kuralı bilmez. |
 | **Panel (React)** | Admin/User arayüzü; yalnız `/api/v1`'i çağırır. | İş kuralı hesaplamaz, yetkiyi tek başına uygulamaz. |
-| **Client (.NET)** | Ürün içinde: aktivasyon isteği, imzalı lisans belgesini doğrulama, offline süre, `LicenseState`. | Lisans üretmez; özel anahtar taşımaz; ürünün UI'ını bilmez. |
+| **Client (.NET 8)** | Ürün içinde: aktivasyon isteği, imzalı lisans belgesini doğrulama, offline süre, `LicenseState`. | Lisans üretmez; özel anahtar taşımaz; ürünün UI'ını bilmez. |
 
 ## 2. Laravel API yapısı
 - ✅ Basit monolit. Uçlar `/api/v1` altında (`bootstrap/app.php` → `apiPrefix: 'api/v1'`).
@@ -48,6 +48,9 @@ Kurallar (ne olacağı) [LICENSING_RULES.md](LICENSING_RULES.md)'dedir; bu dosya
   | `POST /licenses/{id}/extend` · `/revoke` | `license.extend` · `license.revoke` |
   | `GET /customers?q=` | `customer.view` |
   | `GET/POST /users` · `PATCH /users/{id}` | `user.manage` (Admin) |
+  | `GET /audit-logs?group=&user_id=&license_id=` (yalnız okuma, 50/sayfa) | `audit.view` |
+
+- ✅ Mesajlar Türkçe: `APP_LOCALE=tr`, `lang/tr/validation.php` (alan adları dahil), `lang/tr/auth.php`.
 - ✅ Panel aynı domain'den sunulur: `npm run build:deploy` → `public/spa`; `routes/web.php`
   fallback'i `/api` dışındaki sayfa yollarını `public/spa/index.html`'e verir. Statik dosyaları
   web sunucusu doğrudan servis eder (PHP'ye uğramaz).

@@ -1,9 +1,10 @@
 # PanoLicense — Durum
 
-Son güncelleme: 2026-11-22 · Faz: **F2a — Giriş, kullanıcılar ve lisans verme** (canlıda)
+Son güncelleme: 2026-11-22 · Faz: **F2b — Loglar ve Türkçe mesajlar** (canlıda)
 
 ## Karar geçmişi (2026-11-22)
-- ASP.NET Core 10 + SQL Server + Windows IIS → **Laravel 13 (PHP 8.3+) + MySQL 8**. .NET yalnız Client'ta kalır.
+- İlk iskelet ASP.NET Core + SQL Server + IIS idi → **Laravel 13 (PHP 8.3+) + MySQL 8**'e geçildi. Sunucu tarafında .NET yok.
+- .NET yalnız PanoPOS'un kullanacağı **Client kütüphanesinde** kalır ve PanoPOS gibi **.NET 8** hedefler.
 - Yayın: Turhost cPanel uygun değildi (SSH yok, PHP 7.4) → **Contabo VPS** (Nginx + PHP 8.3-FPM + MySQL 8).
 - Demo veri kaldırıldı; panel girişle açılır. User yetkileri: yeni lisans, ±30 gün süresi dolacaklar, tüm lisanslarda arama.
 
@@ -11,20 +12,19 @@ Son güncelleme: 2026-11-22 · Faz: **F2a — Giriş, kullanıcılar ve lisans v
 
 | Alan | Durum | Not |
 |---|---|---|
-| Repo | ✅ | `slh38/PanoLicense` private. `53d38d1` F0, `a958ad6` Laravel. F2a commit edilip canlıya alındı. |
-| Giriş | ✅ yerel | Kullanıcı adı + parola, Sanctum cookie oturumu, rate limit, aynı hata mesajı, çıkış. İlk Admin: `panolicense:create-admin`. |
-| Kullanıcılar | ✅ yerel | Admin panelden User oluşturur, yetki kutucukları, pasife alma (silme yok), parola sıfırlama. |
-| Lisans | ✅ yerel | Yeni lisans (yeni/kayıtlı firma), ±30 gün süresi dolacaklar, arama, detay ("Lisansı veren"), Admin: süre uzatma + iptal (nedenli, silme yok). Firma + ürün için tek aktif lisans (DB unique). |
-| Denetim | ✅ yerel | `audit_logs`: giriş, başarısız giriş, firma/lisans/kullanıcı oluşturma, uzatma, iptal. Panelde görüntüleme ekranı henüz yok. |
-| Veritabanı | ✅ | + `users.username`, `products` (PanoPOS), `customers`, `licenses`, `audit_logs`. Yok: paket/modül/cihaz. |
-| Panel | ✅ yerel | Demo veri silindi. `/giris`, gerçek Dashboard (Admin/User farklı), Lisanslar, Yeni Lisans, Lisans Detay, Müşteriler, Ayarlar·Kullanıcılar. Menü yetkiye göre. Modüller/Paketler/Cihazlar/Loglar boş durum. |
-| Client (.NET) | ✅ iskelet | Değişmedi. |
-| Testler | ✅ | PHPUnit 34 (MySQL), Vitest 12, xUnit 10. Tarayıcıda Admin + User akışı yerelde denendi. |
-| Yayın | ✅ | F2a canlıda: demo veri yok, giriş zorunlu. Admin hesabını kullanıcı `panolicense:create-admin` ile kendisi oluşturur. |
+| Repo | ✅ | `slh38/PanoLicense` private. F2a `ade1f74`, F2b (loglar, Türkçe mesajlar, Client .NET 8) commit edilip canlıya alındı. |
+| Giriş | ✅ canlı | Kullanıcı adı + parola, Sanctum cookie oturumu, rate limit, çıkış. Admin hesabı canlıda oluşturuldu ve giriş doğrulandı. |
+| Kullanıcılar | ✅ canlı | Admin panelden User oluşturur, yetki kutucukları, pasife alma (silme yok), parola sıfırlama. |
+| Lisans | ✅ canlı | Yeni lisans (yeni/kayıtlı firma), ±30 gün süresi dolacaklar, arama, detay ("Lisansı veren"), Admin: süre uzatma + iptal. Firma + ürün için tek aktif lisans (DB unique). |
+| Loglar | ✅ canlı | `/loglar` ekranı (işlem türü + kullanıcı filtresi, sayfalama), lisans detayında "Geçmiş". Yetki: `audit.view` (Admin; istenirse User'a verilir). |
+| Türkçe mesajlar | ✅ canlı | `lang/tr/validation.php` + alan adları; admin komutu `@`/e-posta için Türkçe açıklama verir. |
+| Veritabanı | ✅ | `users.username`, `products` (PanoPOS), `customers`, `licenses`, `audit_logs`. Yok: paket/modül/cihaz. |
+| Panel | ✅ | `/giris`, Dashboard (Admin/User farklı), Lisanslar, Yeni Lisans, Lisans Detay, Müşteriler, Loglar, Ayarlar·Kullanıcılar. Modüller/Paketler/Cihazlar boş durum. |
+| Client (.NET 8) | ✅ iskelet | Yalnız `net8.0` (PanoPOS ile aynı); SDK sürüm sabitlemesi (`global.json`) kaldırıldı. |
+| Testler | ✅ | PHPUnit 40 (MySQL), Vitest 15, xUnit 10 (net8.0). |
 
 ## Sonraki aşamalar
-- **F2a kalan:** kullanıcının kendi Admin hesabını komutla oluşturması.
-- **F2b:** Loglar ekranı, firma düzenleme, paket/modül kataloğu.
+- **F2c:** firma düzenleme, paket/modül kataloğu.
 - **F3 — Aktivasyon:** cihaz kaydı, kilitli kota kontrolü, imzalı lisans belgesi.
 - **F4 — Client:** online doğrulama + 7 gün offline, imza doğrulama, saat geri alma koruması.
 - **F5 — PanoPOS entegrasyonu:** ticari işlemleri durdurma, kalan offline süre gösterimi.

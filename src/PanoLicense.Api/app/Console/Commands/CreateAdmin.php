@@ -43,6 +43,7 @@ class CreateAdmin extends Command
                 'name' => ['required', 'min:2', 'max:100'],
                 'password' => ['required', 'confirmed', Password::min(12)->letters()->numbers()],
             ],
+            ['username.regex' => 'Kullanıcı adı yalnız küçük harf, rakam, nokta (.), alt çizgi (_) ve tire (-) içerebilir; e-posta ve @ kullanılamaz.'],
         );
 
         if ($validator->fails()) {

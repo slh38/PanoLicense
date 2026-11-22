@@ -7,7 +7,7 @@ lisans sunucusu, yönetim paneli ve istemci kütüphanesi.
 |---|---|---|
 | API | PHP 8.3+ / Laravel 13 / Sanctum, MySQL 8 | `src/PanoLicense.Api` |
 | Panel | React 19 + TypeScript + Vite + Tailwind 4 + shadcn/ui | `src/PanoLicense.Panel` |
-| Client | .NET kütüphanesi (net8.0 + net10.0) — PanoPOS gibi ürünler kullanır | `src/PanoLicense.Client` |
+| Client | .NET 8 kütüphanesi — PanoPOS gibi .NET ürünleri kullanır | `src/PanoLicense.Client` |
 
 Yayın: Linux VPS (Ubuntu 24.04, Nginx + PHP-FPM + MySQL 8), `lisans.jokeryazilim.com.tr`,
 API ve panel aynı domain. Aynı sunucuda canlı Joker QR Menü vardır; ona dokunulmaz.

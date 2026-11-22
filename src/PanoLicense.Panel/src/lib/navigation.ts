@@ -49,13 +49,6 @@ export const NAV_ITEMS: NavItem[] = [
     description: "Aktive edilmiş cihazlar, son görülme zamanı ve limit kullanımı burada izlenecek.",
     phase: "F3",
   },
-  {
-    path: "/loglar",
-    label: "Loglar",
-    icon: ScrollText,
-    ability: "audit.view",
-    description: "Giriş, lisans ve kullanıcı işlemlerinin denetim kayıtları burada görüntülenecek (kayıtlar şimdiden tutuluyor).",
-    phase: "F2+",
-  },
+  { path: "/loglar", label: "Loglar", icon: ScrollText, ability: "audit.view" },
   { path: "/ayarlar", label: "Ayarlar", icon: Settings, ability: "user.manage" },
 ];

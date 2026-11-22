@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\DashboardController;
@@ -30,6 +31,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/licenses/{license}', [LicenseController::class, 'show'])->middleware('can:license.view');
     Route::post('/licenses/{license}/extend', [LicenseController::class, 'extend'])->middleware('can:license.extend');
     Route::post('/licenses/{license}/revoke', [LicenseController::class, 'revoke'])->middleware('can:license.revoke');
+
+    Route::get('/audit-logs', [AuditLogController::class, 'index'])->middleware('can:audit.view');
 
     Route::middleware('can:user.manage')->group(function () {
         Route::get('/users', [UserController::class, 'index']);

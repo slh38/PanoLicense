@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, Field, Input } from "@/components/ui/input";
 import { api, ApiError } from "@/lib/api";
+import { actionLabel, describe, type AuditEntry } from "@/lib/audit";
 import { useAuth } from "@/lib/auth";
 import { formatDate, formatDateTime, STATE_LABEL, STATE_VARIANT } from "@/lib/format";
 import type { License } from "@/lib/types";
@@ -95,6 +96,8 @@ export function LicenseDetailPage() {
         </CardContent>
       </Card>
 
+      {can("audit.view") && <LicenseHistory licenseId={license.id} version={license.expires_at + license.status} />}
+
       {isActive && (can("license.extend") || can("license.revoke")) && (
         <div className="grid gap-4 md:grid-cols-2">
           {can("license.extend") && (
@@ -106,6 +109,32 @@ export function LicenseDetailPage() {
         </div>
       )}
     </div>
+  );
+}
+
+/** Bu lisansa ait denetim kayıtları: kim verdi, kim uzattı, kim iptal etti. */
+function LicenseHistory({ licenseId, version }: { licenseId: number; version: string }) {
+  const { data } = useApi<{ data: AuditEntry[] }>(`/audit-logs?license_id=${licenseId}&v=${encodeURIComponent(version)}`);
+  if (!data || data.data.length === 0) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Geçmiş</CardTitle>
+      </CardHeader>
+      <CardContent className="pt-2">
+        <ul className="space-y-2 text-sm">
+          {data.data.map((log) => (
+            <li key={log.id} className="flex flex-wrap gap-x-2">
+              <span className="tabular-nums text-muted-foreground">{formatDateTime(log.created_at)}</span>
+              <b>{log.user?.name ?? "—"}</b>
+              <span>{actionLabel(log.action).toLocaleLowerCase("tr-TR")}</span>
+              {describe(log) && <span className="text-muted-foreground">· {describe(log)}</span>}
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
   );
 }
 

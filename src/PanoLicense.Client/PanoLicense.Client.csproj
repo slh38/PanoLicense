@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- net8.0: PanoPOS (.NET 8) bu kütüphaneyi doğrudan kullanabilsin. -->
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <!-- PanoPOS .NET 8 olduğu için yalnız net8.0. Daha yeni .NET sürümleri net8.0 kütüphanesini kullanabilir. -->
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>PanoLicense.Client</RootNamespace>

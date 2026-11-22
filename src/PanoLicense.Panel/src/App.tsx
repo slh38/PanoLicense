@@ -10,6 +10,7 @@ import { LicenseDetailPage } from "@/pages/LicenseDetailPage";
 import { LicenseNewPage } from "@/pages/LicenseNewPage";
 import { LicensesPage } from "@/pages/LicensesPage";
 import { LoginPage } from "@/pages/LoginPage";
+import { LogsPage } from "@/pages/LogsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 
 function FullScreenLoading() {
@@ -55,6 +56,7 @@ export default function App() {
         <Route path="lisanslar/:id" element={<RequireAbility ability="license.view"><LicenseDetailPage /></RequireAbility>} />
         <Route path="musteriler" element={<RequireAbility ability="customer.view"><CustomersPage /></RequireAbility>} />
         <Route path="ayarlar" element={<RequireAbility ability="user.manage"><SettingsPage /></RequireAbility>} />
+        <Route path="loglar" element={<RequireAbility ability="audit.view"><LogsPage /></RequireAbility>} />
         {placeholders.map((item) => (
           <Route
             key={item.path}

@@ -12,7 +12,7 @@ satın alınan cihaz limiti, 7 gün offline çalışma ve birden fazla yazılım
 | API | PHP 8.3+, Laravel 13, Laravel Sanctum (SPA cookie oturumu) |
 | Veritabanı | MySQL 8 (utf8mb4) |
 | Panel | React 19 + TypeScript + Vite 8 + Tailwind CSS 4 + shadcn/ui yaklaşımı |
-| Client | .NET kütüphanesi (net8.0 + net10.0) |
+| Client | .NET 8 kütüphanesi (PanoPOS için) |
 | Test | PHPUnit (Laravel), Vitest, xUnit (Client) |
 | Yayın | Linux VPS (Nginx + PHP 8.3-FPM + MySQL 8), `https://lisans.jokeryazilim.com.tr` |
 
@@ -21,7 +21,7 @@ satın alınan cihaz limiti, 7 gün offline çalışma ve birden fazla yazılım
 - Composer 2
 - MySQL 8 (yerelde `panolicense_dev` ve `panolicense_test` veritabanları)
 - Node.js 22+ / npm 10+
-- .NET SDK 10 (yalnız Client ve testleri için)
+- .NET SDK 8 veya üstü (yalnız PanoPOS Client kütüphanesi ve testleri için)
 
 ## Yerel geliştirme
 Yerel MySQL'i başlat (Windows servisi değil, isteğe bağlı başlatılır):
@@ -61,7 +61,7 @@ PanoLicense/
 ├─ tests/PanoLicense.Tests/ Client xUnit testleri
 ├─ tools/                   Yerel geliştirme yardımcıları
 ├─ docs/                    Mimari, kurallar, tasarım, yayın, test, iş akışı
-├─ AGENTS.md  STATUS.md  README.md  PanoLicense.sln  global.json
+├─ AGENTS.md  STATUS.md  README.md  PanoLicense.sln
 ```
 
 ## Dokümanlar
