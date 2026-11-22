@@ -29,3 +29,9 @@ lacivert/mavi ağırlıklı. Durum renkleri (yeşil/turuncu/kırmızı) yalnız 
 
 Kod: `src/components/layout` (Sidebar, Topbar, AppLayout), `src/components/dashboard`,
 `src/pages`, menü tanımı `src/lib/navigation.ts`, örnek veri `src/data/mockDashboard.ts`.
+
+## API ile çalışma (F2'den itibaren)
+- Panel yalnız göreli `/api/v1/...` çağırır; Sanctum cookie oturumu kullanılır (önce `/sanctum/csrf-cookie`).
+- Menü ve buton görünürlüğü `GET /api/v1/me` dönen `permissions` listesine göre ayarlanır;
+  asıl yetki kontrolü her zaman sunucudadır.
+- Yayın: `npm run build:deploy` → Laravel `public/spa`, aynı domain.

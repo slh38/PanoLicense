@@ -9,11 +9,17 @@ TestResults/
 *.pubxml.user
 
 # Gizli/yerel ayarlar (gerçek bağlantı bilgisi ve anahtarlar repoya girmez)
-appsettings.Local.json
-appsettings.Production.json
+.env
+.env.*
+!.env.example
 *.pfx
 *.key
+*.pem
 secrets/
+
+# Laravel (ayrıntı: src/PanoLicense.Api/.gitignore)
+src/PanoLicense.Api/vendor/
+src/PanoLicense.Api/public/spa/
 
 # Node / Panel
 node_modules/
@@ -21,10 +27,6 @@ dist/
 *.tsbuildinfo
 .vite/
 npm-debug.log*
-
-# Panel build çıktısı API'ye kopyalanırsa
-src/PanoLicense.Api/wwwroot/*
-!src/PanoLicense.Api/wwwroot/.gitkeep
 
 # IDE / OS
 .idea/

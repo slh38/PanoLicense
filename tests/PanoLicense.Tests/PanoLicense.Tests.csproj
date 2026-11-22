@@ -19,7 +19,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\PanoLicense.Api\PanoLicense.Api.csproj" />
     <ProjectReference Include="..\..\src\PanoLicense.Client\PanoLicense.Client.csproj" />
   </ItemGroup>
 

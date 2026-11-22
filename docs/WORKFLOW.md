@@ -9,8 +9,9 @@
 ## 2. Onay gerektiren işlemler ve Git
 Kullanıcı onayı olmadan yapılmaz:
 - commit, push, branch silme, rebase/force-push, yıkıcı Git işlemi
-- migration oluşturma/uygulama, canlı veya paylaşılan DB değişikliği
-- sunucu, IIS, domain, DNS, Cloudflare ayarı; canlı yayın
+- canlı veya paylaşılan veritabanında migration/değişiklik (yerel dev/test DB serbesttir)
+- cPanel, hosting, domain, DNS, SSL, Cloudflare ayarı; canlı yayın
+- toplu dosya silme
 - gerekçesiz yeni bağımlılık, kapsam genişletme
 
 Her commit/push öncesi: STATUS.md ve değişen alanın MD'si güncel; build ve ilgili testler yeşil.

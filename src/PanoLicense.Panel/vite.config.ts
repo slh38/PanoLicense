@@ -3,13 +3,26 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
-// İleride API ile aynı domain altında yayın: /api istekleri dev ortamında API'ye proxylenir.
-export default defineConfig({
+// Yayında panel Laravel ile aynı domain'dedir: build çıktısı Laravel public/spa klasörüne gider
+// (npm run build:deploy), dosyalar /spa/ altından sunulur, sayfa yolları Laravel fallback'iyle index.html'e düşer.
+// Geliştirmede /api ve /sanctum istekleri Laravel dev sunucusuna (php artisan serve) proxylenir;
+// böylece tarayıcı açısından her şey aynı origin'dir ve Sanctum cookie oturumu çalışır.
+const laravel = "http://127.0.0.1:8000";
+
+export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss()],
   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
+  base: mode === "deploy" ? "/spa/" : "/",
+  build:
+    mode === "deploy"
+      ? { outDir: path.resolve(__dirname, "../PanoLicense.Api/public/spa"), emptyOutDir: true }
+      : undefined,
   server: {
     port: 5173,
-    proxy: { "/api": { target: "http://localhost:5080", changeOrigin: true } },
+    proxy: {
+      "/api": { target: laravel, changeOrigin: false },
+      "/sanctum": { target: laravel, changeOrigin: false },
+    },
   },
   test: { environment: "node" },
-});
+}));
