@@ -1,0 +1,38 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+*.pubxml
+*.pubxml.user
+
+# Gizli/yerel ayarlar (gerçek bağlantı bilgisi ve anahtarlar repoya girmez)
+appsettings.Local.json
+appsettings.Production.json
+*.pfx
+*.key
+secrets/
+
+# Node / Panel
+node_modules/
+dist/
+*.tsbuildinfo
+.vite/
+npm-debug.log*
+
+# Panel build çıktısı API'ye kopyalanırsa
+src/PanoLicense.Api/wwwroot/*
+!src/PanoLicense.Api/wwwroot/.gitkeep
+
+# IDE / OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+Thumbs.db
+.DS_Store
+
+# Ajan/yerel çalışma çıktıları
+.run-logs/
+.claude/settings.local.json
