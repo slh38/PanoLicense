@@ -1,113 +1,103 @@
-import {
-  ArrowDown,
-  ArrowUp,
-  Ban,
-  Boxes,
-  CalendarClock,
-  ChevronRight,
-  KeyRound,
-  MonitorSmartphone,
-  Plus,
-  TimerReset,
-  TriangleAlert,
-  UserPlus,
-  Users,
-  XCircle,
-} from "lucide-react";
+import { CalendarClock, ChevronRight, KeyRound, MonitorSmartphone, Plus, Search, UserPlus, Users, XCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { DistributionCard } from "@/components/dashboard/DistributionCard";
-import { LicenseTabs } from "@/components/dashboard/LicenseTabs";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { Badge } from "@/components/ui/badge";
+import { LicenseTable } from "@/components/licenses/LicenseTable";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { mockActivities, mockDistribution, mockLicenses, mockStats, mockUser } from "@/data/mockDashboard";
+import { Alert } from "@/components/ui/input";
+import { useAuth } from "@/lib/auth";
+import type { License } from "@/lib/types";
+import { useApi } from "@/lib/useApi";
 
-const fmt = new Intl.NumberFormat("tr-TR");
-
-function Change({ value }: { value: number }) {
-  const up = value >= 0;
-  const Icon = up ? ArrowUp : ArrowDown;
-  return (
-    <span className={up ? "text-success" : "text-danger"}>
-      <Icon className="mr-0.5 inline size-3" />
-      {up ? "+" : ""}
-      {value} <span className="text-muted-foreground">(son 7 gün)</span>
-    </span>
-  );
+interface Dashboard {
+  scope: "all" | "own";
+  expiring_window_days: number;
+  stats: {
+    expiring: number;
+    created_by_me: number;
+    active?: number;
+    customers?: number;
+    devices?: number;
+    inactive?: number;
+  };
+  recent: License[];
+  distribution?: { label: string; value: number }[];
 }
 
-// Hızlı işlemler ilgili sayfaya götürür; işlem formları F2'de eklenecek.
-const quickActions = [
-  { label: "Lisans Oluştur", icon: KeyRound, to: "/lisanslar" },
-  { label: "Süre Uzat", icon: TimerReset, to: "/lisanslar" },
-  { label: "Modül Değiştir", icon: Boxes, to: "/moduller" },
-  { label: "Lisans İptal Et", icon: Ban, to: "/lisanslar" },
-  { label: "Müşteri Ekle", icon: UserPlus, to: "/musteriler" },
-];
+const fmt = new Intl.NumberFormat("tr-TR");
+const CHART_COLORS = ["var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-1)"];
 
 export function DashboardPage() {
-  const s = mockStats;
+  const { me, can } = useAuth();
+  const { data, error, loading } = useApi<Dashboard>("/dashboard");
+  const isAdmin = data?.scope === "all";
+
+  const quickActions = [
+    { label: "Yeni Lisans", icon: KeyRound, to: "/lisanslar/yeni", ability: "license.create" },
+    { label: "Süresi Dolacaklar", icon: CalendarClock, to: "/lisanslar?scope=expiring", ability: "license.view" },
+    { label: "Lisans Ara", icon: Search, to: "/lisanslar", ability: "license.view" },
+    { label: "Kullanıcı Ekle", icon: UserPlus, to: "/ayarlar", ability: "user.manage" },
+  ].filter((a) => can(a.ability));
+
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
       <div className="min-w-0 space-y-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold">Hoş geldin, {mockUser.firstName}</h1>
-              <Badge variant="outline">Örnek veri</Badge>
-            </div>
+            <h1 className="text-xl font-bold">Hoş geldin, {me?.name.split(" ")[0]}</h1>
             <p className="text-sm text-muted-foreground">PanoLicense lisans sunucusu yönetim paneli</p>
           </div>
-          <Button asChild>
-            <Link to="/lisanslar">
-              <Plus /> Yeni Lisans
-            </Link>
-          </Button>
+          {can("license.create") && (
+            <Button asChild>
+              <Link to="/lisanslar/yeni">
+                <Plus /> Yeni Lisans
+              </Link>
+            </Button>
+          )}
         </div>
 
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
-          <StatCard
-            title="Aktif Lisans"
-            value={fmt.format(s.activeLicenses.value)}
-            icon={KeyRound}
-            footer={<Change value={s.activeLicenses.change} />}
-          />
-          <StatCard
-            title="Müşteri"
-            value={fmt.format(s.customers.value)}
-            icon={Users}
-            tone="navy"
-            footer={<Change value={s.customers.change} />}
-          />
-          <StatCard
-            title="Aktif Cihaz"
-            value={fmt.format(s.activeDevices.value)}
-            icon={MonitorSmartphone}
-            footer={<Change value={s.activeDevices.change} />}
-          />
-          <StatCard
-            title="Süresi Dolacak"
-            value={fmt.format(s.expiringSoon.value)}
-            icon={CalendarClock}
-            tone="warning"
-            footer={
-              <span className="text-warning">
-                <TriangleAlert className="mr-0.5 inline size-3" />
-                Önümüzdeki {s.expiringSoon.windowDays} gün
-              </span>
-            }
-          />
-          <StatCard
-            title="Pasif / İptal"
-            value={fmt.format(s.inactive.value)}
-            icon={XCircle}
-            tone="danger"
-            footer={<Change value={s.inactive.change} />}
-          />
-        </div>
+        {error && <Alert>{error}</Alert>}
 
-        <LicenseTabs licenses={mockLicenses} activities={mockActivities} />
+        {data && (
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
+            {isAdmin && (
+              <>
+                <StatCard title="Aktif Lisans" value={fmt.format(data.stats.active ?? 0)} icon={KeyRound} footer={<span className="text-muted-foreground">Süresi dolmamış</span>} />
+                <StatCard title="Müşteri" value={fmt.format(data.stats.customers ?? 0)} icon={Users} tone="navy" footer={<span className="text-muted-foreground">Aktif firma</span>} />
+                <StatCard title="Aktif Cihaz" value={fmt.format(data.stats.devices ?? 0)} icon={MonitorSmartphone} footer={<span className="text-muted-foreground">Aktivasyon F3'te</span>} />
+              </>
+            )}
+            <StatCard
+              title="Süresi Dolacak"
+              value={fmt.format(data.stats.expiring)}
+              icon={CalendarClock}
+              tone="warning"
+              footer={<span className="text-warning">±{data.expiring_window_days} gün</span>}
+            />
+            {isAdmin ? (
+              <StatCard title="Pasif / İptal" value={fmt.format(data.stats.inactive ?? 0)} icon={XCircle} tone="danger" footer={<span className="text-muted-foreground">İptal + süresi dolmuş</span>} />
+            ) : (
+              <StatCard title="Verdiğim Lisanslar" value={fmt.format(data.stats.created_by_me)} icon={KeyRound} footer={<span className="text-muted-foreground">Toplam</span>} />
+            )}
+          </div>
+        )}
+
+        <Card className="overflow-hidden">
+          <CardHeader className="pb-3">
+            <CardTitle>{isAdmin ? "Son Lisanslar" : "Son Verdiğim Lisanslar"}</CardTitle>
+            {can("license.view") && (
+              <Link to="/lisanslar?scope=expiring" className="text-xs font-medium text-accent-foreground hover:underline">
+                Süresi dolacaklar →
+              </Link>
+            )}
+          </CardHeader>
+          {loading ? (
+            <p className="px-4 py-10 text-center text-sm text-muted-foreground">Yükleniyor…</p>
+          ) : (
+            <LicenseTable rows={data?.recent ?? []} empty="Henüz lisans yok. İlk lisansı “Yeni Lisans” ile verebilirsiniz." />
+          )}
+        </Card>
       </div>
 
       <div className="grid content-start gap-5 md:grid-cols-2 xl:grid-cols-1">
@@ -129,7 +119,12 @@ export function DashboardPage() {
             ))}
           </CardContent>
         </Card>
-        <DistributionCard title="Paket Dağılımı" slices={mockDistribution} />
+        {isAdmin && data?.distribution && data.distribution.length > 0 && (
+          <DistributionCard
+            title="Ürün Dağılımı"
+            slices={data.distribution.map((d, i) => ({ ...d, color: CHART_COLORS[i % CHART_COLORS.length] }))}
+          />
+        )}
       </div>
     </div>
   );

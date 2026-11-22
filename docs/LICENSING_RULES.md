@@ -29,6 +29,17 @@ _İlk kayıt 2026-11-22; Laravel geçişinde (2026-11-22) yeniden teyit edildi._
    sunucunun imzalı kararını uygular. Özel imza anahtarı hiçbir zaman istemciye gönderilmez.
 10. **PanoPOS entegrasyonu** (kalan offline süre gösterimi dahil) sonraki aşamadır.
 
+## Panel kullanıcı kuralları (2026-11-22)
+11. **Giriş kullanıcı adı + parolayla** yapılır. İlk Admin sunucuda `panolicense:create-admin` komutuyla,
+    parolayı Admin'in kendisi yazarak oluşturulur. Diğer kullanıcıları Admin panelden açar (rol: User).
+12. **User varsayılan yetkileri:** yeni lisans verme, süresi dolacak lisansları görme, lisans arama.
+    - Arama **tüm lisanslarda** yapılır (firma adı veya lisans kodu); sonuçlarda yalnız görüntüleme vardır.
+    - "Süresi dolacak" = aktif olup süresi **±30 gün** içinde olan (yaklaşan + yeni dolmuş) lisanslar.
+    - Filtresiz tüm lisans listesi, süre uzatma ve iptal yalnız Admin'dedir (Admin istersen User'a uzatma/iptal yetkisi verebilir).
+13. **Lisansı kim verdi her zaman görünür:** lisans kaydında veren kullanıcı tutulur; liste ve detayda gösterilir.
+    Tüm işlemler (giriş, lisans/firma/kullanıcı oluşturma, uzatma, iptal) denetim kaydına yazılır.
+14. Aynı firma + ürün için aktif lisans varken ikinci lisans verilemez; yenileme süre uzatmayla yapılır.
+
 ## Durum sözlüğü (Client)
 | Durum | Anlamı | Ticari işlem |
 |---|---|---|

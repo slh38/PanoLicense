@@ -1,5 +1,6 @@
 import { ShieldCheck } from "lucide-react";
 import { NavLink } from "react-router-dom";
+import { useAuth } from "@/lib/auth";
 import { NAV_ITEMS } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +11,9 @@ interface SidebarProps {
 }
 
 export function Sidebar({ collapsed, mobileOpen, onNavigate }: SidebarProps) {
+  const { can } = useAuth();
+  const items = NAV_ITEMS.filter((item) => !item.ability || can(item.ability));
+
   return (
     <aside
       className={cn(
@@ -30,7 +34,7 @@ export function Sidebar({ collapsed, mobileOpen, onNavigate }: SidebarProps) {
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
-        {NAV_ITEMS.map(({ path, label, icon: Icon }) => (
+        {items.map(({ path, label, icon: Icon }) => (
           <NavLink
             key={path}
             to={path}
@@ -54,7 +58,7 @@ export function Sidebar({ collapsed, mobileOpen, onNavigate }: SidebarProps) {
       </nav>
 
       <div className={cn("border-t p-4 text-xs text-muted-foreground", collapsed && "lg:hidden")}>
-        Sürüm 0.1.0 · F0
+        Sürüm 0.3.0
       </div>
     </aside>
   );

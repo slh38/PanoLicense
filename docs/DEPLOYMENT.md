@@ -27,12 +27,34 @@
 | 2 GB swap, `vm.swappiness=10` | ✅ |
 | PHP 8.3-FPM + eklentiler (sodium dahil), Composer 2 (SHA-256 doğrulandı) | ✅ |
 | MySQL 8.0, yalnız localhost; DB bilgisi `/root/.panolicense-db` (600) | ✅ |
+| `panolicense` sistem kullanıcısı, GitHub read-only deploy key, kod `/opt/panolicense/repo` (`a958ad6`) | ✅ |
+| Üretim `.env` (600), ayrı PHP-FPM havuzu (`/run/php/panolicense.sock`, open_basedir) | ✅ |
+| Nginx sitesi `panolicense` (gizli dosyalar 404, yalnız `index.php` çalışır) | ✅ |
+| DNS A kaydı (Turhost) + Let's Encrypt (20.02.2027'ye kadar, otomatik yenileme provası başarılı), HTTP→HTTPS | ✅ |
+| Migration (öncesinde yedek `/var/backups/panolicense/`) + config/route/view cache | ✅ |
+| Scheduler cron (`panolicense` kullanıcısı) | ✅ |
+| Canlı kontrol: `/api/v1/health` 200, `/api/v1/me` 401, panel sayfaları 200, `/.env` 404, QR Menü 200 | ✅ |
 | 72 bekleyen sistem güncellemesi | ⏳ ayrıca, olası reboot nedeniyle gece |
-| Uygulama kurulumu, Nginx sitesi, SSL, cron | ⏳ |
+| Panel girişi yok: canlıda hâlâ `a958ad6` (örnek veri). F2a yayını onay bekliyor | ⚠️ |
+
+## Admin hesabı (canlı)
+Parolayı yalnız kullanıcı yazar; hiçbir yere kaydedilmez. Kullanıcının kendi terminalinde:
+```
+ssh -t root@185.214.135.49 "cd /var/www/panolicense && sudo -u panolicense php artisan panolicense:create-admin"
+```
+Aynı komut mevcut Admin'in parolasını sıfırlamak için de kullanılır.
+
+## Güncelleme yayını (her sürüm)
+1. Yerelde: testler yeşil, `npm run build:deploy`, commit + push (onaylı).
+2. Sunucu: `mysqldump` yedeği → `sudo -u panolicense git pull` → `composer install --no-dev -o`
+   → `php artisan migrate --force` → `php artisan optimize` → panel build'i `public/spa`'ya kopyalanır
+   → `systemctl reload php8.3-fpm`.
 
 ## 2. Dizin ve kullanıcı düzeni
 ```
-/var/www/panolicense/          Laravel (git checkout: src/PanoLicense.Api içeriği)
+/opt/panolicense/repo/         git checkout (tüm repo, deploy key ile)
+/var/www/panolicense/          → /opt/panolicense/repo/src/PanoLicense.Api (sembolik bağ)
+/var/backups/panolicense/      migration öncesi DB yedekleri (700)
 /var/www/panolicense/public    Nginx root (yalnız bu dizin web'e açık)
 /var/www/panolicense/public/spa  React panel build'i
 /etc/panolicense/keys/         İmza anahtarı (F3) — uygulama dışında, 700/600

@@ -35,7 +35,19 @@ Kurallar (ne olacağı) [LICENSING_RULES.md](LICENSING_RULES.md)'dedir; bu dosya
   Sürümsüz `/api/...` yolu sunulmaz.
 - ✅ Controller'lar `app/Http/Controllers/Api/V1`. Lisans mantığı büyüdükçe
   `app/Services` (ör. `LicenseActivationService`) eklenir; repository/CQRS katmanı açılmaz.
-- ✅ Uçlar: `GET /api/v1/health` (açık, DB'ye dokunmaz), `GET /api/v1/me` (oturum gerekli).
+- ✅ Uçlar (`/api/v1`):
+
+  | Uç | Yetki |
+  |---|---|
+  | `GET /health` | açık |
+  | `POST /auth/login` · `POST /auth/logout` | açık (throttle:login) · oturum |
+  | `GET /me` · `GET /dashboard` · `GET /products` | oturum |
+  | `GET /licenses?q=` · `?scope=expiring` · `?scope=all` | `license.view` (filtresiz liste `license.list_all` = Admin) |
+  | `GET /licenses/{id}` | `license.view` |
+  | `POST /licenses` (mevcut firma veya yeni firma ile) | `license.create` |
+  | `POST /licenses/{id}/extend` · `/revoke` | `license.extend` · `license.revoke` |
+  | `GET /customers?q=` | `customer.view` |
+  | `GET/POST /users` · `PATCH /users/{id}` | `user.manage` (Admin) |
 - ✅ Panel aynı domain'den sunulur: `npm run build:deploy` → `public/spa`; `routes/web.php`
   fallback'i `/api` dışındaki sayfa yollarını `public/spa/index.html`'e verir. Statik dosyaları
   web sunucusu doğrudan servis eder (PHP'ye uğramaz).
@@ -47,8 +59,10 @@ Kurallar (ne olacağı) [LICENSING_RULES.md](LICENSING_RULES.md)'dedir; bu dosya
 - ✅ **Sanctum SPA modu** (`statefulApi()`): panel ile API aynı domain'de olduğundan token yerine
   HttpOnly oturum cookie'si + CSRF (XSRF-TOKEN) kullanılır. Token tablosu yoktur.
   Oturumlar veritabanında ve şifreli (`SESSION_ENCRYPT=true`), canlıda `SESSION_SECURE_COOKIE=true`.
-- 🔜 Giriş akışı (F2): `GET /sanctum/csrf-cookie` → `POST /api/v1/auth/login` (throttle:`login`,
-  5/dk e-posta+IP) → `POST /api/v1/auth/logout`. Parola `bcrypt`. İlk Admin artisan komutuyla oluşur.
+- ✅ Giriş akışı: `GET /sanctum/csrf-cookie` → `POST /api/v1/auth/login` (kullanıcı adı + parola,
+  throttle:`login` 5/dk kullanıcı adı+IP) → oturum yenilenir → `POST /api/v1/auth/logout`. Parola `bcrypt`.
+  Hatalı parola / bilinmeyen / pasif kullanıcı aynı mesajı alır. İlk Admin: `php artisan panolicense:create-admin`
+  (parola gizli sorulur). Panel: `/giris` sayfası; oturum yoksa tüm sayfalar oraya yönlenir.
 - ✅ **Roller:** `users.role` = `admin` | `user` (`App\Enums\UserRole`), `users.is_active`.
 - ✅ **Yetkiler:** `App\Enums\Permission` (ör. `license.create`, `license.extend`, `license.revoke`,
   `customer.manage`, `device.release`, `audit.view`). User'a verilenler `user_permissions` tablosunda.
@@ -68,7 +82,9 @@ Kurallar (ne olacağı) [LICENSING_RULES.md](LICENSING_RULES.md)'dedir; bu dosya
   öncesinde veritabanı yedeği alınır.
 - ✅ Fiziksel silme yok: kullanıcılarda `is_active`; lisanslarda `status` + `revoked_*` alanları (F1).
 
-## 5. Veri modeli: Firma + Ürün + Cihaz limiti (🔜 F1)
+## 5. Veri modeli: Firma + Ürün + Cihaz limiti
+✅ Uygulanan: `products` (PanoPOS hazır kayıt), `customers`, `licenses` (`created_by`, `revoked_*`, `active_key`),
+`audit_logs`, `users.username`. 🔜 Kalan: `packages`, `modules`, `license_modules`, `devices`.
 
 ```
 customers (firma) 1──* licenses *──1 products

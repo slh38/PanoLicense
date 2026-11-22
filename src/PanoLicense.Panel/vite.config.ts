@@ -11,11 +11,11 @@ const laravel = "http://127.0.0.1:8000";
 
 export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss()],
-  resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
+  resolve: { alias: { "@": path.resolve(import.meta.dirname, "./src") } },
   base: mode === "deploy" ? "/spa/" : "/",
   build:
     mode === "deploy"
-      ? { outDir: path.resolve(__dirname, "../PanoLicense.Api/public/spa"), emptyOutDir: true }
+      ? { outDir: path.resolve(import.meta.dirname, "../PanoLicense.Api/public/spa"), emptyOutDir: true }
       : undefined,
   server: {
     port: 5173,

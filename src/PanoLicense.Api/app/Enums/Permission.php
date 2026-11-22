@@ -19,6 +19,31 @@ enum Permission: string
     case DeviceRelease = 'device.release';
     case AuditView = 'audit.view';
 
-    /** Yalnız Admin'e ait işlemler; User'a verilemez. */
-    public const ADMIN_ONLY = ['user.manage', 'product.manage', 'settings.manage'];
+    /**
+     * Yalnız Admin'e ait işlemler; User'a verilemez.
+     * license.list_all: tüm lisansları filtresiz listeleme (User yalnız arama + süresi dolacaklar).
+     */
+    public const ADMIN_ONLY = ['user.manage', 'product.manage', 'settings.manage', 'license.list_all'];
+
+    /** Yeni User'a varsayılan yetkiler (onaylı: yeni lisans, süresi dolacaklar, arama). */
+    public static function userDefaults(): array
+    {
+        return [self::LicenseView, self::LicenseCreate, self::CustomerView];
+    }
+
+    /** Panelde gösterilecek Türkçe ad. */
+    public function label(): string
+    {
+        return match ($this) {
+            self::LicenseView => 'Lisans arama ve süresi dolacakları görme',
+            self::LicenseCreate => 'Yeni lisans verme',
+            self::LicenseExtend => 'Lisans süresi uzatma',
+            self::LicenseRevoke => 'Lisans iptal etme',
+            self::CustomerView => 'Firmaları görme',
+            self::CustomerManage => 'Firma düzenleme',
+            self::DeviceView => 'Cihazları görme',
+            self::DeviceRelease => 'Cihaz serbest bırakma',
+            self::AuditView => 'Logları görme',
+        };
+    }
 }
