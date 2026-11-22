@@ -35,7 +35,7 @@
 | Scheduler cron (`panolicense` kullanıcısı) | ✅ |
 | Canlı kontrol: `/api/v1/health` 200, `/api/v1/me` 401, panel sayfaları 200, `/.env` 404, QR Menü 200 | ✅ |
 | 72 bekleyen sistem güncellemesi | ⏳ ayrıca, olası reboot nedeniyle gece |
-| Panel girişi yok: canlıda hâlâ `a958ad6` (örnek veri). F2a yayını onay bekliyor | ⚠️ |
+| F2a yayını `ade1f74` (2026-11-22): yedek → migration → panel; giriş zorunlu, demo veri yok, cookie secure+httponly | ✅ |
 
 ## Admin hesabı (canlı)
 Parolayı yalnız kullanıcı yazar; hiçbir yere kaydedilmez. Kullanıcının kendi terminalinde:
