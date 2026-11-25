@@ -40,6 +40,20 @@ _İlk kayıt 2026-11-22; Laravel geçişinde (2026-11-22) yeniden teyit edildi._
     Tüm işlemler (giriş, lisans/firma/kullanıcı oluşturma, uzatma, iptal) denetim kaydına yazılır.
 14. Aynı firma + ürün için aktif lisans varken ikinci lisans verilemez; yenileme süre uzatmayla yapılır.
 
+## Demo kuralları (2026-11-25)
+15. **PanoPOS kurulumunda demo** seçilince istemci lisans sunucusuna kayıt gönderir; sunucu **14 günlük demo**
+    açar (cihaz limiti 1). Firma bilgisini kurulumu yapan girer.
+16. **Kurulumu yapan:** kurulum ekranına isteğe bağlı olarak personelin **lisans sunucusundaki kullanıcı adı**
+    (ör. `i.simsek`) yazılır ve lisansta "Kurulumu yapan" olarak görünür. Boş bırakılırsa **son kullanıcı** kurmuştur.
+    Yazılan ad panelde yoksa ham hâliyle saklanır ve "panelde yok" diye gösterilir (doğrulanmış bir kimlik değildir).
+17. **Bir cihaz bir ürün için yalnız bir kez demo alır.** Yeniden kurulum demo süresini sıfırlamaz; mevcut kayıt döner.
+18. **Demo onayı = lisans vermek:** `license.create` yetkisi olan (Admin veya yetkili personel) eksik firma bilgilerini
+    tamamlar, cihaz limiti ve süreyi girer, onaylar. Lisans anahtarı değişmez; onaylayan "Lisansı veren" olur,
+    kurulumu yapan bilgisi korunur. Onaylanmayacak demo iptal edilir (silinmez).
+19. **Cihaz limiti uygulanır:** aktif cihaz sayısı limiti aşamaz; aynı cihaz tekrar gelirse yer tüketmez.
+    Yetkili kullanıcı (`device.release`, varsayılan Admin) cihazı serbest bırakarak yer açar; kayıt silinmez.
+20. İnternet yokken demonun PanoPOS'ta ne zaman duracağı PanoPOS tarafının konusudur (bu repo kapsamı dışında).
+
 ## Durum sözlüğü (Client)
 | Durum | Anlamı | Ticari işlem |
 |---|---|---|

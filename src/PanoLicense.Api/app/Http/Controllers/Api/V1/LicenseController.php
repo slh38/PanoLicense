@@ -6,6 +6,7 @@ use App\Enums\LicenseStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\LicenseResource;
 use App\Models\Customer;
+use App\Models\Device;
 use App\Models\License;
 use App\Models\Product;
 use App\Support\Audit;
@@ -24,25 +25,30 @@ class LicenseController extends Controller
      * Listeleme kuralları:
      *  - scope=expiring: süresi 30 gün içinde dolacak / dolmuş aktif lisanslar (license.view)
      *  - q=...: firma adı veya lisans koduyla arama, tüm lisanslarda (license.view)
+     *  - scope=demo: PanoPOS kurulumundan gelen, onay bekleyen demolar (license.view)
      *  - filtresiz tam liste yalnız Admin (license.list_all)
      */
     public function index(Request $request): AnonymousResourceCollection
     {
         $data = $request->validate([
             'q' => ['nullable', 'string', 'min:2', 'max:100'],
-            'scope' => ['nullable', Rule::in(['expiring', 'all'])],
+            'scope' => ['nullable', Rule::in(['expiring', 'demo', 'all'])],
         ]);
         $search = isset($data['q']) ? trim($data['q']) : null;
-        $expiring = ($data['scope'] ?? null) === 'expiring';
+        $scope = $data['scope'] ?? null;
 
-        if (! $search && ! $expiring) {
+        if (! $search && ! in_array($scope, ['expiring', 'demo'], true)) {
             Gate::authorize('license.list_all');
         }
 
-        $query = License::query()->with(['customer', 'product', 'creator']);
+        $query = License::query()
+            ->with(['customer', 'product', 'creator', 'installer', 'approver'])
+            ->withCount('activeDevices');
 
-        if ($expiring) {
+        if ($scope === 'expiring') {
             $query->expiring()->orderBy('expires_at');
+        } elseif ($scope === 'demo') {
+            $query->where('status', LicenseStatus::Demo)->latest('id');
         } else {
             $query->latest('id');
         }
@@ -60,7 +66,92 @@ class LicenseController extends Controller
 
     public function show(License $license): LicenseResource
     {
-        return new LicenseResource($license->load(['customer', 'product', 'creator', 'revoker']));
+        return new LicenseResource($this->loadDetail($license));
+    }
+
+    /**
+     * Demo onayı: eksik firma bilgileri tamamlanır, cihaz limiti ve süre verilir, lisans aktif olur.
+     * Onaylayan "lisansı veren" olarak kaydedilir; kurulumu yapan bilgisi korunur.
+     */
+    public function approve(Request $request, License $license): LicenseResource
+    {
+        $data = $request->validate([
+            'customer' => ['required', 'array'],
+            'customer.name' => ['required', 'string', 'min:2', 'max:150'],
+            'customer.city' => ['nullable', 'string', 'max:100'],
+            'customer.phone' => ['nullable', 'string', 'max:30'],
+            'customer.email' => ['nullable', 'email', 'max:150'],
+            'customer.tax_number' => ['nullable', 'string', 'max:20'],
+            'device_limit' => ['required', 'integer', 'min:1', 'max:1000'],
+            'starts_at' => ['required', 'date'],
+            'expires_at' => ['required', 'date', 'after:starts_at', 'after_or_equal:today'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $userId = $request->user()->id;
+
+        try {
+            DB::transaction(function () use ($license, $data, $userId) {
+                $locked = License::whereKey($license->id)->lockForUpdate()->firstOrFail();
+                if ($locked->status !== LicenseStatus::Demo) {
+                    throw ValidationException::withMessages(['license' => 'Bu kayıt demo değil; zaten onaylanmış veya iptal edilmiş.']);
+                }
+
+                $locked->customer->update($data['customer']);
+                $this->ensureNoActiveLicense($locked->customer_id, $locked->product_id);
+
+                $locked->forceFill([
+                    'status' => LicenseStatus::Active,
+                    'device_limit' => $data['device_limit'],
+                    'starts_at' => $data['starts_at'],
+                    'expires_at' => $data['expires_at'],
+                    'notes' => $data['notes'] ?? $locked->notes,
+                    'created_by' => $userId,
+                    'approved_by' => $userId,
+                    'approved_at' => now(),
+                ])->save();
+
+                Audit::log('license.approve_demo', $locked, [
+                    'customer' => $locked->customer->name,
+                    'installer' => $locked->installer_username,
+                    'device_limit' => $data['device_limit'],
+                    'expires_at' => $data['expires_at'],
+                ]);
+            });
+        } catch (UniqueConstraintViolationException $e) {
+            if (str_contains($e->getMessage(), 'active_key')) {
+                throw $this->activeLicenseError();
+            }
+            throw $e;
+        }
+
+        return new LicenseResource($this->loadDetail($license->fresh()));
+    }
+
+    /** Cihazı serbest bırakır (kayıt silinmez); lisansta yeni cihaza yer açılır. */
+    public function releaseDevice(Request $request, License $license, Device $device): LicenseResource
+    {
+        abort_unless($device->license_id === $license->id, 404);
+        if (! $device->isActive()) {
+            throw ValidationException::withMessages(['device' => 'Cihaz zaten serbest bırakılmış.']);
+        }
+
+        DB::transaction(function () use ($device, $license, $request) {
+            $device->forceFill([
+                'status' => Device::STATUS_RELEASED,
+                'released_at' => now(),
+                'released_by' => $request->user()->id,
+            ])->save();
+            Audit::log('license.device_release', $license, ['device' => $device->name]);
+        });
+
+        return new LicenseResource($this->loadDetail($license));
+    }
+
+    private function loadDetail(License $license): License
+    {
+        return $license->load(['customer', 'product', 'creator', 'revoker', 'installer', 'approver', 'devices'])
+            ->loadCount('activeDevices');
     }
 
     /** Yeni lisans: mevcut firmaya veya aynı işlemde oluşturulan yeni firmaya. Tek transaction. */
@@ -143,14 +234,17 @@ class LicenseController extends Controller
             Audit::log('license.extend', $license, ['from' => $old, 'to' => $data['expires_at']]);
         });
 
-        return new LicenseResource($license->fresh(['customer', 'product', 'creator']));
+        return new LicenseResource($this->loadDetail($license->fresh()));
     }
 
     /** İptal: kayıt silinmez; kim, ne zaman, neden saklanır. */
     public function revoke(Request $request, License $license): LicenseResource
     {
         $data = $request->validate(['reason' => ['required', 'string', 'min:3', 'max:500']]);
-        $this->ensureActive($license);
+        // Aktif lisans veya onaylanmayacak demo iptal edilebilir.
+        if ($license->status === LicenseStatus::Revoked) {
+            throw ValidationException::withMessages(['license' => 'Lisans zaten iptal edilmiş.']);
+        }
 
         DB::transaction(function () use ($license, $data, $request) {
             $license->forceFill([
@@ -162,7 +256,7 @@ class LicenseController extends Controller
             Audit::log('license.revoke', $license, ['reason' => $data['reason']]);
         });
 
-        return new LicenseResource($license->fresh(['customer', 'product', 'creator', 'revoker']));
+        return new LicenseResource($this->loadDetail($license->fresh()));
     }
 
     private function ensureNoActiveLicense(int $customerId, int $productId): void
@@ -187,7 +281,7 @@ class LicenseController extends Controller
     private function ensureActive(License $license): void
     {
         if ($license->status !== LicenseStatus::Active) {
-            throw ValidationException::withMessages(['license' => 'İptal edilmiş lisansta işlem yapılamaz.']);
+            throw ValidationException::withMessages(['license' => 'Süre uzatma yalnız aktif lisansta yapılır (demo önce onaylanmalı).']);
         }
     }
 

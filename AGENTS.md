@@ -20,7 +20,8 @@ Ek olarak yalnız görevin dokunduğu alanları oku:
 | Görev dokunuyorsa | Oku |
 |---|---|
 | API, veritabanı, yetki, Client, offline, güvenlik | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
-| Lisans/cihaz/rol/iptal/süre kuralları | [docs/LICENSING_RULES.md](docs/LICENSING_RULES.md) |
+| Lisans/cihaz/rol/iptal/süre/demo kuralları | [docs/LICENSING_RULES.md](docs/LICENSING_RULES.md) |
+| PanoPOS ↔ sunucu istemci uçları (demo, aktivasyon, kontrol) | [docs/CLIENT_API.md](docs/CLIENT_API.md) |
 | Panel kodu, UI, tema, tasarım | [docs/UI_DESIGN.md](docs/UI_DESIGN.md) |
 | VPS yayını, Nginx, domain, sunucu durumu | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) |
 | Test, build, doğrulama | [docs/TESTING.md](docs/TESTING.md) |

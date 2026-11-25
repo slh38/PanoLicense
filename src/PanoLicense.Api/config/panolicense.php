@@ -6,7 +6,10 @@ return [
     // Onaylı kural: son başarılı doğrulamadan sonra en fazla 7 gün offline (docs/LICENSING_RULES.md).
     'offline_grace_days' => (int) env('LICENSE_OFFLINE_GRACE_DAYS', 7),
 
-    // F3: Ed25519 imza anahtarı. Dosya public dizininin DIŞINDA olmalıdır.
+    // Onaylı karar: PanoPOS kurulumunda başlatılan demo süresi (gün).
+    'demo_days' => (int) env('LICENSE_DEMO_DAYS', 14),
+
+    // F3b: imza anahtarı. Dosya public dizininin DIŞINDA olmalıdır.
     'signing' => [
         'key_path' => env('LICENSE_SIGNING_KEY_PATH'),
         'key_id' => env('LICENSE_SIGNING_KEY_ID', 'k1'),

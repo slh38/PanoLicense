@@ -6,6 +6,7 @@ use App\Enums\LicenseStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
@@ -16,7 +17,8 @@ class License extends Model
 
     protected $fillable = [
         'license_key', 'customer_id', 'product_id', 'device_limit',
-        'starts_at', 'expires_at', 'status', 'notes', 'created_by',
+        'starts_at', 'expires_at', 'status', 'source', 'notes', 'created_by',
+        'installer_username', 'installed_by',
     ];
 
     protected function casts(): array
@@ -25,6 +27,7 @@ class License extends Model
             'starts_at' => 'date',
             'expires_at' => 'date',
             'revoked_at' => 'datetime',
+            'approved_at' => 'datetime',
             'status' => LicenseStatus::class,
             'device_limit' => 'integer',
         ];
@@ -50,6 +53,32 @@ class License extends Model
         return $this->belongsTo(User::class, 'revoked_by');
     }
 
+    /** Kurulumu yapan personel (PanoPOS'a yazılan kullanıcı adı panel kullanıcısıyla eşleştiyse). */
+    public function installer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'installed_by');
+    }
+
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function devices(): HasMany
+    {
+        return $this->hasMany(Device::class);
+    }
+
+    public function activeDevices(): HasMany
+    {
+        return $this->devices()->where('status', Device::STATUS_ACTIVE);
+    }
+
+    public function isUsable(): bool
+    {
+        return $this->status !== LicenseStatus::Revoked && ! $this->expires_at->lt(Carbon::today());
+    }
+
     /**
      * Aktif olup süresi önümüzdeki N gün içinde dolacak veya son N gün içinde dolmuş lisanslar.
      */
@@ -61,7 +90,7 @@ class License extends Model
             ->whereBetween('expires_at', [$today->copy()->subDays($days), $today->copy()->addDays($days)]);
     }
 
-    /** Panelde gösterilen durum: revoked > expired > expiring > active. */
+    /** Panelde gösterilen durum: revoked > demo/demo_expired > expired > expiring > active. */
     public function displayState(): string
     {
         if ($this->status === LicenseStatus::Revoked) {
@@ -69,6 +98,9 @@ class License extends Model
         }
 
         $today = Carbon::today();
+        if ($this->status === LicenseStatus::Demo) {
+            return $this->expires_at->lt($today) ? 'demo_expired' : 'demo';
+        }
         if ($this->expires_at->lt($today)) {
             return 'expired';
         }

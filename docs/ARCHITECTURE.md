@@ -49,6 +49,11 @@ Kurallar (ne olacağı) [LICENSING_RULES.md](LICENSING_RULES.md)'dedir; bu dosya
   | `GET /customers?q=` | `customer.view` |
   | `GET/POST /users` · `PATCH /users/{id}` | `user.manage` (Admin) |
   | `GET /audit-logs?group=&user_id=&license_id=` (yalnız okuma, 50/sayfa) | `audit.view` |
+  | `GET /licenses?scope=demo` · `POST /licenses/{id}/approve` | `license.view` · `license.create` |
+  | `POST /licenses/{id}/devices/{device}/release` | `device.release` |
+  | `POST /client/demo` · `/client/activate` · `/client/check` (istemci, oturumsuz) | throttle `license-demo` / `license-client` |
+
+  İstemci sözleşmesi: [CLIENT_API.md](CLIENT_API.md). İş mantığı: `app/Services/ClientLicenseService.php`.
 
 - ✅ Mesajlar Türkçe: `APP_LOCALE=tr`, `lang/tr/validation.php` (alan adları dahil), `lang/tr/auth.php`.
 - ✅ Panel aynı domain'den sunulur: `npm run build:deploy` → `public/spa`; `routes/web.php`
@@ -86,8 +91,9 @@ Kurallar (ne olacağı) [LICENSING_RULES.md](LICENSING_RULES.md)'dedir; bu dosya
 - ✅ Fiziksel silme yok: kullanıcılarda `is_active`; lisanslarda `status` + `revoked_*` alanları (F1).
 
 ## 5. Veri modeli: Firma + Ürün + Cihaz limiti
-✅ Uygulanan: `products` (PanoPOS hazır kayıt), `customers`, `licenses` (`created_by`, `revoked_*`, `active_key`),
-`audit_logs`, `users.username`. 🔜 Kalan: `packages`, `modules`, `license_modules`, `devices`.
+✅ Uygulanan: `products` (PanoPOS hazır kayıt), `customers`, `licenses` (`created_by`, `revoked_*`, `active_key`,
+`source`, `installer_username`, `installed_by`, `approved_by/at`, durum `demo|active|revoked`), `devices`,
+`audit_logs`, `users.username`. 🔜 Kalan: `packages`, `modules`, `license_modules`.
 
 ```
 customers (firma) 1──* licenses *──1 products
@@ -108,12 +114,13 @@ users 1──* user_permissions          audit_logs (kim, ne, hangi kayıt, önc
 - **Geçmiş:** süre uzatma, modül değişikliği, iptal, cihaz serbest bırakma `audit_logs`'a yazılır.
 
 ## 6. Eşzamanlılık ve performans
-- 🔜 **Aktivasyon / kota:** tek transaction içinde `SELECT ... FROM licenses WHERE id=? FOR UPDATE`
+- ✅ **Aktivasyon / kota:** tek transaction içinde `SELECT ... FROM licenses WHERE license_key=? FOR UPDATE`
   → aktif cihaz sayımı → gerekiyorsa insert. İki cihaz aynı anda son kotayı alamaz.
-  Aynı parmak izi tekrar gelirse mevcut kayıt döner (idempotent).
-- 🔜 **Doğrulama ucu:** lisans anahtarı + parmak izi ile tek indeksli sorgu (licenses ⨝ devices).
-  `last_seen_at` her istekte değil, en fazla saatte bir güncellenir (gereksiz yazma yok).
-- 🔜 Dashboard sayaçları basit `COUNT` sorgularıdır; gerekirse kısa süreli `database` cache.
+  Aynı parmak izi tekrar gelirse mevcut kayıt döner (idempotent); serbest bırakılmış cihaz dönerse yeniden yer tüketir.
+- ✅ **Demo tekilliği:** demo kaydı ürün satırı kilitlenerek yapılır; aynı parmak izi için ikinci demo açılmaz.
+- ✅ **Kontrol ucu:** kilitsiz, lisans anahtarı (unique) + `devices(license_id, fingerprint_hash)` indeksi.
+  `last_seen_at` her istekte değil, en fazla saatte bir yazılır.
+- ✅ Dashboard sayaçları basit `COUNT` sorgularıdır.
 
 ## 7. Offline çalışma yaklaşımı (🔜 F3–F4)
 1. Client online iken sunucudan **imzalı lisans belgesi** alır: lisans id, firma, ürün, modüller,

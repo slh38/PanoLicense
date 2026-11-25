@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Alert } from "@/components/ui/input";
-import { actionLabel, describe, GROUPS, isWarning, type AuditEntry } from "@/lib/audit";
+import { actionLabel, actorName, describe, GROUPS, isWarning, type AuditEntry } from "@/lib/audit";
 import { formatDateTime } from "@/lib/format";
 import { useApi } from "@/lib/useApi";
 
@@ -83,7 +83,7 @@ export function LogsPage() {
                 {data.data.map((log) => (
                   <tr key={log.id} className="border-b align-top last:border-0">
                     <td className="whitespace-nowrap px-4 py-3 tabular-nums text-muted-foreground">{formatDateTime(log.created_at)}</td>
-                    <td className="whitespace-nowrap px-4 py-3">{log.user?.name ?? "—"}</td>
+                    <td className="whitespace-nowrap px-4 py-3">{actorName(log)}</td>
                     <td className="whitespace-nowrap px-4 py-3">
                       <Badge variant={isWarning(log.action) ? "danger" : "default"}>{actionLabel(log.action)}</Badge>
                     </td>

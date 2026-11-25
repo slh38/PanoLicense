@@ -1,4 +1,4 @@
-import { CalendarClock, ChevronRight, KeyRound, MonitorSmartphone, Plus, Search, UserPlus, Users, XCircle } from "lucide-react";
+import { CalendarClock, ChevronRight, KeyRound, MonitorDown, MonitorSmartphone, Plus, Search, UserPlus, Users, XCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { DistributionCard } from "@/components/dashboard/DistributionCard";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -16,6 +16,7 @@ interface Dashboard {
   stats: {
     expiring: number;
     created_by_me: number;
+    demo_pending: number;
     active?: number;
     customers?: number;
     devices?: number;
@@ -35,6 +36,7 @@ export function DashboardPage() {
 
   const quickActions = [
     { label: "Yeni Lisans", icon: KeyRound, to: "/lisanslar/yeni", ability: "license.create" },
+    { label: "Demo Talepleri", icon: MonitorDown, to: "/lisanslar?scope=demo", ability: "license.view" },
     { label: "Süresi Dolacaklar", icon: CalendarClock, to: "/lisanslar?scope=expiring", ability: "license.view" },
     { label: "Lisans Ara", icon: Search, to: "/lisanslar", ability: "license.view" },
     { label: "Kullanıcı Ekle", icon: UserPlus, to: "/ayarlar", ability: "user.manage" },
@@ -65,9 +67,17 @@ export function DashboardPage() {
               <>
                 <StatCard title="Aktif Lisans" value={fmt.format(data.stats.active ?? 0)} icon={KeyRound} footer={<span className="text-muted-foreground">Süresi dolmamış</span>} />
                 <StatCard title="Müşteri" value={fmt.format(data.stats.customers ?? 0)} icon={Users} tone="navy" footer={<span className="text-muted-foreground">Aktif firma</span>} />
-                <StatCard title="Aktif Cihaz" value={fmt.format(data.stats.devices ?? 0)} icon={MonitorSmartphone} footer={<span className="text-muted-foreground">Aktivasyon F3'te</span>} />
+                <StatCard title="Aktif Cihaz" value={fmt.format(data.stats.devices ?? 0)} icon={MonitorSmartphone} footer={<span className="text-muted-foreground">Tüm lisanslarda</span>} />
               </>
             )}
+            <Link to="/lisanslar?scope=demo" className="rounded-xl focus-visible:outline-2">
+              <StatCard
+                title="Demo Talepleri"
+                value={fmt.format(data.stats.demo_pending)}
+                icon={MonitorDown}
+                footer={<span className="text-muted-foreground">Onay bekliyor →</span>}
+              />
+            </Link>
             <StatCard
               title="Süresi Dolacak"
               value={fmt.format(data.stats.expiring)}
@@ -85,7 +95,7 @@ export function DashboardPage() {
 
         <Card className="overflow-hidden">
           <CardHeader className="pb-3">
-            <CardTitle>{isAdmin ? "Son Lisanslar" : "Son Verdiğim Lisanslar"}</CardTitle>
+            <CardTitle>{isAdmin ? "Son Lisanslar" : "Verdiğim Lisanslar ve Kurduğum Demolar"}</CardTitle>
             {can("license.view") && (
               <Link to="/lisanslar?scope=expiring" className="text-xs font-medium text-accent-foreground hover:underline">
                 Süresi dolacaklar →

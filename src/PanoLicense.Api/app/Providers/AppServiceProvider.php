@@ -67,7 +67,13 @@ class AppServiceProvider extends ServiceProvider
             Limit::perMinute(20)->by($request->ip()),
         ]);
 
-        // İstemci (PanoPOS) aktivasyon ve doğrulama uçları (F3).
+        // İstemci (PanoPOS) aktivasyon ve durum kontrolü uçları.
         RateLimiter::for('license-client', fn (Request $request) => Limit::perMinute(30)->by($request->ip()));
+
+        // Demo kaydı: herkese açık uç; sahte/toplu kayda karşı IP başına saatte 10 (aynı işyerinde birkaç kurulum yeter).
+        RateLimiter::for('license-demo', fn (Request $request) => [
+            Limit::perHour(10)->by($request->ip()),
+            Limit::perMinute(3)->by($request->ip()),
+        ]);
     }
 }

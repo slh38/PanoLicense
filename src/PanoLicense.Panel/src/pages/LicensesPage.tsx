@@ -10,24 +10,33 @@ import type { License, Paginated } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
 import { cn } from "@/lib/utils";
 
-type Tab = "expiring" | "all";
+type Tab = "expiring" | "demo" | "all";
+
+const EMPTY: Record<Tab, string> = {
+  expiring: "Önümüzdeki 30 gün içinde süresi dolacak lisans yok.",
+  demo: "Onay bekleyen demo yok. PanoPOS'ta demo kurulunca burada görünür.",
+  all: "Henüz lisans yok.",
+};
 
 export function LicensesPage() {
   const { can } = useAuth();
   const canListAll = can("license.list_all");
   const [params, setParams] = useSearchParams();
   const q = params.get("q")?.trim() ?? "";
-  const tab: Tab = params.get("scope") === "all" && canListAll ? "all" : q ? "all" : "expiring";
+  const scopeParam = params.get("scope");
+  const tab: Tab = q
+    ? "all"
+    : scopeParam === "demo"
+      ? "demo"
+      : scopeParam === "all" && canListAll
+        ? "all"
+        : "expiring";
   const [input, setInput] = useState(q);
 
   useEffect(() => setInput(q), [q]);
 
-  // User: arama veya süresi dolacaklar. Admin: ayrıca filtresiz tüm liste.
-  const path = q.length >= 2
-    ? `/licenses?q=${encodeURIComponent(q)}`
-    : tab === "all" && canListAll
-      ? "/licenses?scope=all"
-      : "/licenses?scope=expiring";
+  // User: arama, süresi dolacaklar ve demo talepleri. Admin: ayrıca filtresiz tüm liste.
+  const path = q.length >= 2 ? `/licenses?q=${encodeURIComponent(q)}` : `/licenses?scope=${tab}`;
   const { data, error, loading } = useApi<Paginated<License>>(path);
 
   function submit(e: FormEvent) {
@@ -38,6 +47,7 @@ export function LicensesPage() {
 
   const tabs: { id: Tab; label: string; show: boolean }[] = [
     { id: "expiring", label: "Süresi Dolacak (30 gün)", show: true },
+    { id: "demo", label: "Demo Talepleri", show: true },
     { id: "all", label: "Tüm Lisanslar", show: canListAll },
   ];
 
@@ -79,7 +89,7 @@ export function LicensesPage() {
                 role="tab"
                 type="button"
                 aria-selected={tab === t.id}
-                onClick={() => setParams(t.id === "all" ? { scope: "all" } : {})}
+                onClick={() => setParams(t.id === "expiring" ? {} : { scope: t.id })}
                 className={cn(
                   "whitespace-nowrap border-b-2 px-3 pb-2.5 pt-2 text-sm font-medium transition-colors",
                   tab === t.id ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
@@ -101,7 +111,7 @@ export function LicensesPage() {
         ) : (
           <LicenseTable
             rows={data?.data ?? []}
-            empty={q ? "Aramaya uyan lisans bulunamadı." : tab === "expiring" ? "Önümüzdeki 30 gün içinde süresi dolacak lisans yok." : "Henüz lisans yok."}
+            empty={q ? "Aramaya uyan lisans bulunamadı." : EMPTY[tab]}
           />
         )}
       </Card>

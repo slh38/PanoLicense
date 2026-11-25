@@ -6,6 +6,7 @@ use App\Enums\LicenseStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\LicenseResource;
 use App\Models\Customer;
+use App\Models\Device;
 use App\Models\License;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,17 +26,22 @@ class DashboardController extends Controller
         $isAdminView = Gate::allows('license.list_all');
 
         $expiring = License::expiring()->count();
-        $mine = License::where('created_by', $user->id);
+        // Personelin kendi işleri: verdiği lisanslar + kurduğu demolar
+        $mine = License::where(fn ($q) => $q->where('created_by', $user->id)->orWhere('installed_by', $user->id));
 
         $response = [
             'scope' => $isAdminView ? 'all' : 'own',
             'expiring_window_days' => License::EXPIRING_WINDOW_DAYS,
             'stats' => [
                 'expiring' => $expiring,
-                'created_by_me' => (clone $mine)->count(),
+                'created_by_me' => License::where('created_by', $user->id)->count(),
+                'demo_pending' => License::where('status', LicenseStatus::Demo)
+                    ->where('expires_at', '>=', $today)->count(),
             ],
             'recent' => LicenseResource::collection(
-                ($isAdminView ? License::query() : $mine)->with(['customer', 'product', 'creator'])->latest('id')->limit(8)->get()
+                ($isAdminView ? License::query() : $mine)
+                    ->with(['customer', 'product', 'creator', 'installer', 'approver'])
+                    ->latest('id')->limit(8)->get()
             ),
         ];
 
@@ -43,7 +49,7 @@ class DashboardController extends Controller
             $response['stats'] += [
                 'active' => License::where('status', LicenseStatus::Active)->where('expires_at', '>=', $today)->count(),
                 'customers' => Customer::where('is_active', true)->count(),
-                'devices' => 0, // F3: cihaz aktivasyonu
+                'devices' => Device::where('status', Device::STATUS_ACTIVE)->count(),
                 'inactive' => License::where('status', LicenseStatus::Revoked)
                     ->orWhere(fn ($q) => $q->where('status', LicenseStatus::Active)->where('expires_at', '<', $today))
                     ->count(),
