@@ -19,6 +19,10 @@ powershell -ExecutionPolicy Bypass -File tools\pack-client.ps1
 - Sürüm yalnız `src/PanoLicense.Client/PanoLicense.Client.csproj` → `<Version>` içinde değişir (SemVer).
 - Yama (1.0.x): davranış değişmeyen düzeltme; küçük (1.x.0): geriye uyumlu ekleme; büyük (x.0.0): sözleşme kırılımı.
 - Aynı sürüm numarasıyla farklı içerik **asla** yayınlanmaz; düzeltme yeni sürümdür.
+- **Tarihsel istisna:** 1.0.1, yama numarasıyla yayınlandığı hâlde geriye uyumlu public API eklemesi içerir
+  (`CreateCommercialProof`, `GetSignedRevocationDocument`, `CommercialProofVerifier`, `CommercialProofFormat`).
+  SemVer'e göre 1.1.0 olmalıydı; paket yayınlanıp PanoPOS'ta hash ile kullanıldığı için yeniden numaralandırılmaz.
+  Bu tek seferlik istisnadır; bundan sonraki public API eklemeleri küçük sürüm (1.x.0) artışıyla yapılır.
 - Her sürüm için `CLIENT_PACKAGE.md`'ye SHA-256 yazılır; tüketici (PanoPOS) hash'i doğrular.
 
 ## Paket içeriği ve güvenlik

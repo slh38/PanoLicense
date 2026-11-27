@@ -1,9 +1,10 @@
 # PanoLicense ↔ PanoPOS Ortak Lisans Sözleşmesi
 
-Sürüm: 2 · Tarih: 2026-11-28 · Durum: **FAZ 1.2 kararları ürün sahibi tarafından onaylandı (§11).**
+Sürüm: 2.1 · Tarih: 2026-11-28 · Durum: **FAZ 1.2 kararları ürün sahibi tarafından onaylandı (§11).**
+2.1: yalnız ortak faz sıralaması kesinleştirildi (§10, CTO çapraz denetimi); iş kuralı değişmedi.
 Bu dosya iki repoda (`PanoLicense/docs/` ve `PanoPos/docs/`) **aynı içerikle** tutulur; değişiklik iki repoda
 birlikte yapılır. PanoLicense iç kuralları: `LICENSING_RULES.md`, istemci HTTP sözleşmesi: `CLIENT_API.md`.
-§6 akışı onaylı mimari yöndür; ayrıntılı tasarımı FAZ 3–4'te yapılır.
+§6 akışı onaylı mimari yöndür; ayrıntılı tasarımı FAZ 4.1–4.2'de yapılır.
 
 ## 1. Onaylı temel ilkeler
 - **Firma + ürün bazında tek lisans.** Cihaz kotası firmanın bütün şubelerinde ortaktır.
@@ -54,7 +55,7 @@ grupları; firma/şube/fiş ayarları; yerel yedekleme; yazıcı desteği (bilgi
 ekranını kapsar. Restoran ödeme akışı `Adisyon/Siparis → Fatura → Tahsilat` ortak altyapısını kullanır ve
 `quick_sale` gerektirmez (§9).
 
-## 4. Modül → PanoPOS uç eşlemesi (FAZ 5'te kesinleşir)
+## 4. Modül → PanoPOS uç eşlemesi (FAZ 4.3'te kesinleşir)
 | Modül | WebApi kapsamı (mevcut uçlar) | Desktop |
 |---|---|---|
 | `quick_sale` | `/api/v1/hizli-satis/*` | Hızlı Satış |
@@ -98,7 +99,7 @@ ama Desktop'a güvenilmez: her şey imza ile doğrulanır.
 
 WebApi, PanoLicense sunucusuna bağlanmaz; yalnız imzalı belgeyi doğrular. Belge imzası sahte modül/izin
 eklenmesini, challenge imzası başka PC'nin belgesinin kopyalanmasını engeller. Ana bilgisayar saat güvenliği
-FAZ 4'te teknik olarak çözülür.
+FAZ 4.2'de teknik olarak çözülür.
 
 ## 7. Oturumda bitiş, iptal ve modül değişikliği
 - **Kapı:** WebApi her ticari istekte oturumun izin bitişini ve gerekli modül kodunu kontrol eder. Bellekten
@@ -119,7 +120,7 @@ FAZ 4'te teknik olarak çözülür.
 
 ## 8. Windows Service hesabı ve anahtar erişimi
 - Device Service mevcut `LocalService` hesabıyla çalışmaya devam eder; ayar/secret `%ProgramData%\PanoPOS\Device\v1`
-  altında ACL'lidir. TPM makine anahtarının `LocalService` ile çalıştığı FAZ 3'te gerçek cihazda doğrulanır.
+  altında ACL'lidir. TPM makine anahtarının `LocalService` ile çalıştığı FAZ 4.1'de gerçek cihazda doğrulanır.
 - Lisans için: Client `KeyScope = Machine`; durum dizini `%ProgramData%\PanoPOS\License` (yalnız servis hesabı
   yazar, kullanıcılar okuyamaz); ikinci kopya `HKLM\Software\PanoLicense\PANOPOS` (servis hesabına yazma izni
   kurulumda verilir).
@@ -136,15 +137,20 @@ FAZ 4'te teknik olarak çözülür.
   ortak konuma taşınmalıdır (Desktop bağımlılığı oluşmasın). Backend tarafında `/hizli-satis` bağımlılığı yoktur.
 
 ## 10. Uygulama fazları ve kabul kriterleri
-| Faz | Kapsam | Kabul |
+Ortak sıralama (2026-11-28, kesin). Her faz ayrı görev ve ayrı onaydır; sıra zorunludur. Uygulama ayrıntısı ve
+sorumlular: PanoPOS `docs/LICENSING_INTEGRATION.md` §10.
+
+| Faz | Kapsam | Kabul / durum |
 |---|---|---|
-| FAZ 2 | PanoLicense katalog: §2 modülleri ve matrisi, demo Pro 14 gün, planlanan açıklaması; güvenli tekrar çalıştırılabilir katalog komutu; yayın planı | PHPUnit: matris, imzalı `modules`, demo Pro, tekrar çalıştırmada mükerrer kayıt/ezme yok |
-| FAZ 3 | Device Service lisans ajanı: Client entegrasyonu, makine anahtarı, ProgramData/HKLM durumu, HMAC uçları (durum, demo, aktivasyon, kanıt) ve değişiklik olayı | Kurulu serviste (LocalService) TPM/yazılım anahtarı; servis yeniden başlatma; offline/iptal kalıcılığı; kullanıcı hesabı anahtara erişemez |
-| FAZ 4 | WebApi lisans doğrulayıcı: oturum challenge'ı, belge + kanıt doğrulama, firma lisans bağı, kalıcı iptal, ana bilgisayar saat güvenliği | Sahte/başka PC belgesi, eski challenge, süresi geçmiş/iptal belge reddi; saat geri alma süre kazandırmaz; satışta ağ çağrısı yok |
-| FAZ 5 | WebApi modül kapıları (§4) ve hata kodları; lisanssız durumda okuma/rapor/yedek açık | Her modül için açık/kapalı testleri; temel uçlar modülsüz çalışır; Lite vardiyasız satış; kapanan modülde açık işlem tamamlanır, yeni işlem açılmaz |
-| FAZ 6 | Desktop: aktivasyon/demo ekranı, lisans durumu ve kalan offline süre, modüle göre menü, yenileme; ödeme bileşeninin ortaklaştırılması | Gerçek Tauri EXE: menü gizleme, lisans yenileme, iptalde durma; satış akışı bekleme yapmaz |
-| FAZ 7 | Setup: Device Service zorunlu kurulum, LocalService ve ACL, anahtar hazırlığı, yalnız sunucu ana bilgisayar modu | Temiz Windows 10/11'de kurulum; yalnız sunucu ana bilgisayar cihaz hakkı kullanmaz |
-| FAZ 8 | Canlı geçiş: PanoLicense F3b + katalog yayını, imza anahtarı `k1`, çok terminalli uçtan uca test | Gerçek LAN'da 2+ terminal, cihaz limiti, offline/iptal/modül değişikliği senaryoları |
+| FAZ 0–3 | PanoLicense geliştirme (F3b, F4 Client, panel, ürün/paket/modül, §2 katalog) ve canlı yayın; imza anahtarı `k1` | **Tamamlandı** — canlı kabul 12/12 PASS |
+| FAZ 4.0 | Entegrasyon rehberi (`LICENSING_INTEGRATION.md`) | **Tamamlandı** |
+| FAZ 4.1 | Device Service ve Client entegrasyonu: Client paketi (1.0.1, kanıt API'si), makine anahtarı, ProgramData/HKLM durumu, HMAC uçları (durum, demo, aktivasyon, kontrol, kanıt) ve değişiklik olayı | **Tamamlandı** — kurulu serviste (LocalService) TPM/yazılım anahtarı; servis yeniden başlatma; offline/iptal kalıcılığı; kullanıcı hesabı anahtara erişemez |
+| FAZ 4.2 | WebApi lisans doğrulaması: oturum challenge'ı, belge + kanıt doğrulama, firma lisans bağı, kalıcı iptal, ana bilgisayar saat güvenliği | Sahte/başka PC belgesi, eski challenge, süresi geçmiş/iptal belge reddi; saat geri alma süre kazandırmaz; satışta ağ çağrısı yok; eski terminal oturumunun güvenli yenilenmesi; Device Service erişim kaybında güvenli davranış; firma–lisans eşleştirmesi; ana bilgisayar saat güvenliği (yöntemler Codex tasarımı + onay) |
+| FAZ 4.3 | WebApi modül kontrolleri (§4) ve hata kodları; lisanssız durumda okuma/rapor/yedek açık | Her modül için açık/kapalı testleri; temel uçlar modülsüz çalışır; ortak ticari uçlardan modül yetkisi atlanamaz; temel/gelişmiş rapor ayrımı; Lite vardiyasız satış; kapanan modülde açık işlem tamamlanır, yeni işlem açılmaz |
+| FAZ 5 | Desktop native köprü ve kullanıcı deneyimi: challenge→kanıt→oturum, aktivasyon/demo ekranı, lisans durumu ve kalan offline süre, modüle göre menü, yenileme; ödeme bileşeninin ortaklaştırılması | Menü gizleme, lisans yenileme, iptalde durma; satış akışı bekleme yapmaz; secret JS'te yok |
+| FAZ 6 | Gerçek cihaz ve EXE kabul testleri | Gerçek Tauri EXE ve gerçek LAN'da 2+ satış PC'si: cihaz limiti, offline/iptal/modül değişikliği senaryoları |
+| FAZ 7 | Setup ve Updater: Device Service zorunlu kurulum, LocalService ve ACL, anahtar hazırlığı, yalnız sunucu ana bilgisayar modu | Temiz Windows 10/11'de kurulum ve güncelleme; yalnız sunucu ana bilgisayar cihaz hakkı kullanmaz |
+| FAZ 8 | Lite pilot müşteri | Gerçek işletmede Lite paketle kontrollü kullanım |
 
 ## 11. Onaylanan kararlar (2026-11-28)
 1. Firma + ürün bazında tek lisans; cihaz kotası bütün şubelerde ortak.
@@ -153,7 +159,7 @@ FAZ 4'te teknik olarak çözülür.
 4. `bank` modülü banka hesaplarını, transferi ve banka hareketlerini kapsar; normal kart tahsilatı temeldir.
 5. Çoklu depo modülü kapanınca mevcut veriler korunur.
 6. Terazi bütün paketlerde standarttır (temel sistem).
-7. Ana bilgisayar saat güvenliği FAZ 4'te teknik olarak çözülecek.
+7. Ana bilgisayar saat güvenliği FAZ 4.2'de teknik olarak çözülecek.
 8. Mobil garson cihazları satış bilgisayarı kotasından düşmez.
 9. Device Service `LocalService` hesabıyla kalır; gerçek cihazda doğrulanır.
 10. Modül kapatıldığında mevcut açık işlemler güvenli şekilde tamamlanabilir, yeni işlem açılamaz.

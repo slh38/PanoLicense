@@ -13,6 +13,20 @@ Yayın: Linux VPS (Ubuntu 24.04, Nginx + PHP-FPM + MySQL 8), `lisans.jokeryazili
 API ve panel aynı domain. Aynı sunucuda canlı Joker QR Menü vardır; ona dokunulmaz.
 Teknik adlar İngilizce, içerik ve dokümanlar Türkçedir.
 
+## Proje kimliği ve repo doğrulama (zorunlu)
+| Alan | Değer |
+|---|---|
+| Proje | PanoLicense (lisans sunucusu, panel, `PanoLicense.Client`) |
+| Yerel dizin | `C:\Users\PC\Desktop\PanoLicense` |
+| GitHub | `https://github.com/slh38/PanoLicense` (private) |
+| Dal | `main` |
+| İlişkili repo | PanoPOS V2 — `D:\PROJELER\PanoPos`, `https://github.com/slh38/PanoPOSv2` (ayrı repo; ortak sözleşme [docs/LICENSING_CONTRACT.md](docs/LICENSING_CONTRACT.md) iki repoda birebir aynı) |
+
+Her görevin başında, dosya değiştirmeden önce: çalışma dizini, `git remote get-url origin`, dal, `HEAD` ve
+`git status` doğrulanır; görevde verilen son onaylı commit ile karşılaştırılır. Uyuşmazlık (başka repo/dal, beklenmeyen
+commit veya commit edilmemiş yabancı değişiklik) varsa işlem yapılmaz, raporlanır. Ortak sözleşme değiştiğinde iki kopyanın
+birebir aynı olduğu (`cmp`) doğrulanır.
+
 ## Okuma kuralı
 Her görevde: bu dosya + [STATUS.md](STATUS.md) + [docs/WORKFLOW.md](docs/WORKFLOW.md).
 Ek olarak yalnız görevin dokunduğu alanları oku:
