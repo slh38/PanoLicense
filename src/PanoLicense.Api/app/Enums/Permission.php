@@ -22,8 +22,9 @@ enum Permission: string
     /**
      * Yalnız Admin'e ait işlemler; User'a verilemez.
      * license.list_all: tüm lisansları filtresiz listeleme (User yalnız arama + süresi dolacaklar).
+     * license.modules: lisansın paketini değiştirme ve lisansa özel ek modül verme/kaldırma.
      */
-    public const ADMIN_ONLY = ['user.manage', 'product.manage', 'settings.manage', 'license.list_all'];
+    public const ADMIN_ONLY = ['user.manage', 'product.manage', 'settings.manage', 'license.list_all', 'license.offline_policy', 'license.modules'];
 
     /** Yeni User'a varsayılan yetkiler (onaylı: yeni lisans, süresi dolacaklar, arama). */
     public static function userDefaults(): array

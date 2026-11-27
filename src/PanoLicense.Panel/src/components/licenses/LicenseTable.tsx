@@ -22,7 +22,7 @@ export function LicenseTable({ rows, empty }: { rows: License[]; empty: string }
           <tr className="border-b text-left text-xs text-muted-foreground">
             <th className="px-4 py-2.5 font-medium">Firma</th>
             <th className="px-4 py-2.5 font-medium">Lisans Kodu</th>
-            <th className="px-4 py-2.5 font-medium">Ürün</th>
+            <th className="px-4 py-2.5 font-medium">Ürün / Paket</th>
             <th className="px-4 py-2.5 font-medium">Cihaz</th>
             <th className="px-4 py-2.5 font-medium">Bitiş</th>
             <th className="px-4 py-2.5 font-medium">Durum</th>
@@ -53,6 +53,7 @@ export function LicenseTable({ rows, empty }: { rows: License[]; empty: string }
               <td className="whitespace-nowrap px-4 py-3 font-mono text-xs">{l.license_key}</td>
               <td className="px-4 py-3">
                 <Badge>{l.product.name}</Badge>
+                {l.package && <div className="mt-1 text-xs text-muted-foreground">{l.package.name}</div>}
               </td>
               <td className="whitespace-nowrap px-4 py-3 tabular-nums">
                 {l.active_device_count !== undefined ? `${l.active_device_count}/${l.device_limit}` : l.device_limit}

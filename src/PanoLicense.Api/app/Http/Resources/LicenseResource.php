@@ -25,6 +25,19 @@ class LicenseResource extends JsonResource
                 'tax_number' => $this->customer->tax_number,
             ],
             'product' => ['id' => $this->product->id, 'name' => $this->product->name],
+            'package' => $this->whenLoaded('package', fn () => $this->package
+                ? ['id' => $this->package->id, 'code' => $this->package->code, 'name' => $this->package->name]
+                : null),
+            // Detayda: geçerli modüller (paket + ek) ve kaynağı. İmzalı belgeye aynı kodlar girer.
+            'modules' => $this->when(
+                $this->relationLoaded('addonModules') && $this->relationLoaded('package'),
+                fn () => $this->effectiveModules()->map(fn ($m) => [
+                    'id' => $m->id, 'code' => $m->code, 'name' => $m->name,
+                    'source' => $this->package?->modules->contains('id', $m->id) ? 'package' : 'license',
+                ])->values(),
+            ),
+            'addon_module_ids' => $this->whenLoaded('addonModules', fn () => $this->addonModules->pluck('id')->sort()->values()),
+            'offline_grace_days' => $this->offlineGraceDays(),
             'device_limit' => $this->device_limit,
             'starts_at' => $this->starts_at->toDateString(),
             'expires_at' => $this->expires_at->toDateString(),

@@ -1,16 +1,29 @@
-import { ArrowLeft, Ban, CalendarPlus, CheckCircle2, Copy, Unplug } from "lucide-react";
+import { ArrowLeft, Ban, CalendarPlus, Check, CheckCircle2, CloudOff, Copy, Package as PackageIcon, Puzzle, Save, Unplug } from "lucide-react";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, Field, Input, Textarea } from "@/components/ui/input";
+import { OfflinePolicyPicker, OfflineRevokeWarning } from "@/components/licenses/OfflinePolicy";
+import { PackagePicker } from "@/components/licenses/PackagePicker";
 import { api, ApiError } from "@/lib/api";
+import {
+  canChangeOfflinePolicy,
+  EXTENDED_OFFLINE_DAYS,
+  normalizeOfflineDays,
+  OFFLINE_POLICY_ABILITY,
+  offlinePolicyBody,
+  offlinePolicyLabel,
+  STANDARD_OFFLINE_DAYS,
+  type OfflineGraceDays,
+} from "@/lib/offline";
 import { actionLabel, actorName, describe, type AuditEntry } from "@/lib/audit";
 import { useAuth } from "@/lib/auth";
 import { formatDate, formatDateTime, installerLabel, isoDatePlus, STATE_LABEL, STATE_VARIANT } from "@/lib/format";
-import type { License } from "@/lib/types";
+import type { CatalogProduct, License, Product } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
+import { cn } from "@/lib/utils";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -71,6 +84,12 @@ export function LicenseDetailPage() {
               </span>
             </Row>
             <Row label="Ürün">{license.product.name}</Row>
+            <Row label="Paket">
+              {license.package ? <b>{license.package.name}</b> : <span className="text-muted-foreground">Paket yok</span>}
+            </Row>
+            <Row label="Modüller">
+              <ModuleChips modules={license.modules ?? []} />
+            </Row>
             <Row label="Firma">
               {license.customer.name}
               {license.customer.city && <span className="text-muted-foreground"> · {license.customer.city}</span>}
@@ -81,6 +100,16 @@ export function LicenseDetailPage() {
             </Row>
             <Row label={license.status === "demo" ? "Demo süresi" : "Geçerlilik"}>
               {formatDate(license.starts_at)} – {formatDate(license.expires_at)}
+            </Row>
+            <Row label="Offline çalışma">
+              <span className="inline-flex flex-wrap items-center gap-2">
+                <Badge variant={normalizeOfflineDays(license.offline_grace_days) === EXTENDED_OFFLINE_DAYS ? "warning" : "default"}>
+                  <CloudOff /> {offlinePolicyLabel(license.offline_grace_days)}
+                </Badge>
+                {license.status === "demo" && <span className="text-xs text-muted-foreground">Demo lisanslarda daima 7 gün</span>}
+              </span>
+              {license.status === "active" && normalizeOfflineDays(license.offline_grace_days) === EXTENDED_OFFLINE_DAYS &&
+                !canChangeOfflinePolicy(license, can) && <div className="mt-2"><OfflineRevokeWarning /></div>}
             </Row>
             {license.source === "demo" && (
               <Row label="Kurulumu yapan">
@@ -118,6 +147,23 @@ export function LicenseDetailPage() {
         <ApproveCard license={license} onDone={(l) => { setData({ data: l }); setNotice("Demo onaylandı; lisans aktif. PanoPOS bir sonraki kontrolde aktif lisansı görür."); }} />
       )}
 
+      {canChangeOfflinePolicy(license, can) && (
+        <OfflinePolicyCard
+          license={license}
+          onDone={(l, changed) => {
+            setData({ data: l });
+            setNotice(changed ? "Offline politika güncellendi. Cihazlar yeni politikayı bir sonraki online kontrolde alır." : "Politika zaten bu değerde.");
+          }}
+        />
+      )}
+
+      {license.status !== "revoked" && can("license.modules") && (
+        <PackageModulesCard
+          license={license}
+          onDone={(l, text) => { setData({ data: l }); setNotice(text); }}
+        />
+      )}
+
       {license.devices && (
         <DevicesCard
           license={license}
@@ -129,7 +175,7 @@ export function LicenseDetailPage() {
       {can("audit.view") && (
         <LicenseHistory
           licenseId={license.id}
-          version={`${license.expires_at}${license.status}${license.active_device_count ?? 0}`}
+          version={`${license.expires_at}${license.status}${license.active_device_count ?? 0}${license.offline_grace_days}${license.package?.id}${(license.addon_module_ids ?? []).join()}`}
         />
       )}
 
@@ -156,10 +202,17 @@ function ApproveCard({ license, onDone }: { license: License; onDone: (l: Licens
     email: license.customer.email ?? "",
     tax_number: license.customer.tax_number ?? "",
   });
+  const { can } = useAuth();
+  const canChooseExtended = can(OFFLINE_POLICY_ABILITY);
   const [deviceLimit, setDeviceLimit] = useState(1);
   const [startsAt, setStartsAt] = useState(isoDatePlus(0));
   const [expiresAt, setExpiresAt] = useState(isoDatePlus(365));
   const [notes, setNotes] = useState("");
+  const [offlineDays, setOfflineDays] = useState<OfflineGraceDays>(STANDARD_OFFLINE_DAYS);
+  // Demo Pro paketiyle gelir; onaylayan satılan paketi seçer.
+  const products = useApi<Product[]>("/products");
+  const packages = products.data?.find((p) => p.id === license.product.id)?.packages ?? [];
+  const [packageId, setPackageId] = useState<number | "">(license.package?.id ?? "");
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -179,6 +232,8 @@ function ApproveCard({ license, onDone }: { license: License; onDone: (l: Licens
           starts_at: startsAt,
           expires_at: expiresAt,
           notes: notes || null,
+          ...offlinePolicyBody(offlineDays, canChooseExtended),
+          ...(packageId === "" ? {} : { package_id: packageId }),
         },
       });
       onDone(res.data);
@@ -217,16 +272,30 @@ function ApproveCard({ license, onDone }: { license: License; onDone: (l: Licens
           <Field label="Vergi no" error={err("customer.tax_number")}>
             <Input value={customer.tax_number} onChange={(e) => setCustomer({ ...customer, tax_number: e.target.value })} maxLength={20} />
           </Field>
+          <PackagePicker
+            packages={packages}
+            value={packageId}
+            onChange={(pkg) => { setPackageId(pkg.id); setDeviceLimit(pkg.default_device_limit); }}
+            error={err("package_id")}
+          />
           <Field label="Cihaz limiti *" error={err("device_limit")} hint="Firmanın satın aldığı cihaz sayısı">
             <Input type="number" min={1} max={1000} value={deviceLimit} onChange={(e) => setDeviceLimit(Number(e.target.value))} />
           </Field>
-          <div />
           <Field label="Başlangıç *" error={err("starts_at")}>
             <Input type="date" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
           </Field>
           <Field label="Bitiş *" error={err("expires_at")}>
             <Input type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
           </Field>
+          <div className="sm:col-span-2">
+            <OfflinePolicyPicker
+              value={offlineDays}
+              onChange={setOfflineDays}
+              canChooseExtended={canChooseExtended}
+              error={err("offline_grace_days")}
+            />
+            <p className="mt-1.5 text-xs text-muted-foreground">Onay öncesi demo 7 gündür; seçim onayla birlikte ticari lisansa uygulanır.</p>
+          </div>
           <div className="sm:col-span-2">
             <Field label="Not" error={err("notes")}>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={1000} />
@@ -237,6 +306,179 @@ function ApproveCard({ license, onDone }: { license: License; onDone: (l: Licens
               <CheckCircle2 /> {busy ? "Onaylanıyor…" : "Onayla ve aktif et"}
             </Button>
           </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Geçerli modüller: paketten gelenler ve lisansa özel ek modüller ("ek" rozeti). */
+function ModuleChips({ modules }: { modules: NonNullable<License["modules"]> }) {
+  if (modules.length === 0) return <span className="text-muted-foreground">Modül yok</span>;
+  return (
+    <span className="flex flex-wrap gap-1.5">
+      {modules.map((m) => (
+        <Badge key={m.id} variant={m.source === "license" ? "default" : "outline"} title={m.code}>
+          {m.name}
+          {m.source === "license" && <span className="font-semibold">· ek</span>}
+        </Badge>
+      ))}
+    </span>
+  );
+}
+
+/**
+ * Paket değiştirme ve lisansa özel ek modüller (yalnız Admin). Paket değişince cihaz limiti ve ek modüller değişmez.
+ * Cihazlar yeni modül listesini sonraki başarılı online kontrolde alır.
+ */
+function PackageModulesCard({ license, onDone }: { license: License; onDone: (l: License, notice: string) => void }) {
+  const catalog = useApi<{ data: CatalogProduct[] }>("/catalog");
+  const product = catalog.data?.data.find((p) => p.id === license.product.id);
+  const [packageId, setPackageId] = useState<number | "">(license.package?.id ?? "");
+  const [addons, setAddons] = useState<number[]>(license.addon_module_ids ?? []);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const selectedPackage = product?.packages.find((p) => p.id === packageId);
+  const packageModuleIds = selectedPackage?.module_ids ?? [];
+  const addonsDirty = [...addons].sort().join() !== [...(license.addon_module_ids ?? [])].sort().join();
+  const packageDirty = packageId !== "" && packageId !== license.package?.id;
+  const note = "Cihazlar değişikliği sonraki online kontrolde alır.";
+
+  async function call(path: string, method: "POST" | "PUT", body: unknown, text: string) {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await api<{ data: License }>(path, { method, body });
+      onDone(res.data, text);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.firstMessage() : "Sunucuya ulaşılamadı.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Paket ve modüller</CardTitle>
+        <span className="text-xs text-muted-foreground">Yalnız Admin · loglanır</span>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {error && <Alert>{error}</Alert>}
+        {!product ? (
+          <p className="text-sm text-muted-foreground">{catalog.error ?? "Yükleniyor…"}</p>
+        ) : (
+          <>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="min-w-48 flex-1">
+                <Field label="Paket" hint="Cihaz limiti ve ek modüller değişmez.">
+                  <select
+                    value={packageId}
+                    disabled={busy}
+                    onChange={(e) => setPackageId(Number(e.target.value))}
+                    className="h-9 w-full rounded-lg border bg-card px-3 text-sm outline-none focus:border-primary"
+                  >
+                    {packageId === "" && <option value="">Paket seçin</option>}
+                    {product.packages.filter((p) => p.is_active || p.id === license.package?.id).map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}{p.is_active ? "" : " (pasif)"}</option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+              <Button variant="outline" disabled={busy || !packageDirty}
+                onClick={() => call(`/licenses/${license.id}/package`, "POST", { package_id: packageId }, `Paket değiştirildi. ${note}`)}>
+                <PackageIcon /> Paketi değiştir
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground">Lisansa özel ek modüller</div>
+              {product.modules.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Bu ürüne modül tanımlı değil (Ürünler sayfası).</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {product.modules.map((m) => {
+                    const inPackage = packageModuleIds.includes(m.id);
+                    const on = addons.includes(m.id);
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        disabled={busy || !m.is_active}
+                        aria-pressed={on}
+                        title={inPackage ? "Pakette zaten var" : m.code}
+                        onClick={() => setAddons((a) => (a.includes(m.id) ? a.filter((id) => id !== m.id) : [...a, m.id]))}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50",
+                          on ? "border-primary bg-accent text-accent-foreground" : "bg-card text-muted-foreground hover:bg-muted/60",
+                        )}
+                      >
+                        {on ? <Check className="size-3.5" /> : <Puzzle className="size-3.5" />}
+                        {m.name}
+                        {inPackage && <span className="opacity-70">(pakette)</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {addonsDirty && (
+                <Button size="sm" disabled={busy}
+                  onClick={() => call(`/licenses/${license.id}/modules`, "PUT", { module_ids: addons }, `Ek modüller güncellendi. ${note}`)}>
+                  <Save /> Ek modülleri kaydet
+                </Button>
+              )}
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Offline politika değişikliği (yalnız Admin, yalnız aktif ticari lisans). */
+function OfflinePolicyCard({ license, onDone }: { license: License; onDone: (l: License, changed: boolean) => void }) {
+  const current = normalizeOfflineDays(license.offline_grace_days);
+  const [value, setValue] = useState<OfflineGraceDays>(current);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const dirty = value !== current;
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await api<{ data: License }>(`/licenses/${license.id}/offline-policy`, {
+        method: "POST",
+        body: { offline_grace_days: value },
+      });
+      onDone(res.data, dirty);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.firstMessage() : "Sunucuya ulaşılamadı.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Offline çalışma politikası</CardTitle>
+        <span className="text-xs text-muted-foreground">Şu an: {offlinePolicyLabel(current)}</span>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={submit} className="space-y-3">
+          {error && <Alert>{error}</Alert>}
+          <OfflinePolicyPicker value={value} onChange={setValue} canChooseExtended disabled={busy} />
+          {dirty && (
+            <p className="text-xs text-muted-foreground">
+              Değişiklik cihazlara bir sonraki online kontrolde ulaşır; daha önce verilmiş offline izinler geriye dönük kısalmaz.
+            </p>
+          )}
+          <Button type="submit" variant="outline" disabled={busy || !dirty}>
+            <CloudOff /> {busy ? "Kaydediliyor…" : "Politikayı kaydet"}
+          </Button>
         </form>
       </CardContent>
     </Card>

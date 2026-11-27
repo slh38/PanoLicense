@@ -14,7 +14,7 @@ class Device extends Model
     public const SEEN_WRITE_INTERVAL_MINUTES = 60;
 
     protected $fillable = [
-        'license_id', 'fingerprint_hash', 'name', 'app_version', 'status',
+        'license_id', 'fingerprint_hash', 'public_key', 'public_key_hash', 'name', 'app_version', 'status',
         'last_ip', 'first_seen_at', 'last_seen_at',
     ];
 

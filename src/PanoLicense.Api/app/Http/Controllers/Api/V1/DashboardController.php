@@ -56,10 +56,11 @@ class DashboardController extends Controller
             ];
             $response['distribution'] = License::query()
                 ->join('products', 'products.id', '=', 'licenses.product_id')
+                ->leftJoin('packages', 'packages.id', '=', 'licenses.package_id')
                 ->where('licenses.status', LicenseStatus::Active)
                 ->where('licenses.expires_at', '>=', $today)
-                ->groupBy('products.name')
-                ->selectRaw('products.name as label, count(*) as value')
+                ->groupBy('products.name', 'packages.name')
+                ->selectRaw("CONCAT(products.name, ' ', COALESCE(packages.name, '(paketsiz)')) as label, count(*) as value")
                 ->get();
         }
 

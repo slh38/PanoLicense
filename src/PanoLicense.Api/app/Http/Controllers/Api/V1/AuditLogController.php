@@ -14,7 +14,7 @@ use Illuminate\Validation\Rule;
 class AuditLogController extends Controller
 {
     /** Panelde filtre olarak gösterilen işlem grupları (action öneki). */
-    private const GROUPS = ['auth', 'license', 'customer', 'user'];
+    private const GROUPS = ['auth', 'license', 'customer', 'user', 'catalog'];
 
     public function index(Request $request): JsonResponse
     {

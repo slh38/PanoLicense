@@ -4,9 +4,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, Field, Input, Textarea } from "@/components/ui/input";
+import { OfflinePolicyPicker } from "@/components/licenses/OfflinePolicy";
+import { PackagePicker } from "@/components/licenses/PackagePicker";
 import { api, ApiError } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { isoDatePlus } from "@/lib/format";
-import type { Customer, License, Paginated, Product } from "@/lib/types";
+import { OFFLINE_POLICY_ABILITY, offlinePolicyBody, STANDARD_OFFLINE_DAYS, type OfflineGraceDays } from "@/lib/offline";
+import type { Customer, License, Paginated, Product, ProductPackage } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +18,8 @@ type Mode = "new" | "existing";
 
 export function LicenseNewPage() {
   const navigate = useNavigate();
+  const { can } = useAuth();
+  const canChooseExtended = can(OFFLINE_POLICY_ABILITY);
   const products = useApi<Product[]>("/products");
 
   const [mode, setMode] = useState<Mode>("new");
@@ -21,10 +27,12 @@ export function LicenseNewPage() {
   const [customerQuery, setCustomerQuery] = useState("");
   const [selected, setSelected] = useState<Customer | null>(null);
   const [productId, setProductId] = useState<number | "">("");
+  const [packageId, setPackageId] = useState<number | "">("");
   const [deviceLimit, setDeviceLimit] = useState(1);
   const [startsAt, setStartsAt] = useState(isoDatePlus(0));
   const [expiresAt, setExpiresAt] = useState(isoDatePlus(365));
   const [notes, setNotes] = useState("");
+  const [offlineDays, setOfflineDays] = useState<OfflineGraceDays>(STANDARD_OFFLINE_DAYS);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -37,6 +45,13 @@ export function LicenseNewPage() {
     if (products.data?.length && productId === "") setProductId(products.data[0].id);
   }, [products.data, productId]);
 
+  const packages = products.data?.find((p) => p.id === productId)?.packages ?? [];
+  // Ürün değişince paket seçimi sıfırlanır; cihaz limiti seçilen paketin varsayılanıyla dolar (değiştirilebilir).
+  function choosePackage(pkg: ProductPackage) {
+    setPackageId(pkg.id);
+    setDeviceLimit(pkg.default_device_limit);
+  }
+
   const err = (key: string) => errors[key]?.[0];
 
   async function submit(e: FormEvent) {
@@ -46,10 +61,12 @@ export function LicenseNewPage() {
     setMessage(null);
     const body: Record<string, unknown> = {
       product_id: productId,
+      package_id: packageId === "" ? null : packageId,
       device_limit: deviceLimit,
       starts_at: startsAt,
       expires_at: expiresAt,
       notes: notes || null,
+      ...offlinePolicyBody(offlineDays, canChooseExtended),
     };
     if (mode === "existing") body.customer_id = selected?.id ?? null;
     else body.customer = Object.fromEntries(Object.entries(customer).map(([k, v]) => [k, v.trim() || null]));
@@ -165,7 +182,10 @@ export function LicenseNewPage() {
             <Field label="Ürün *" error={err("product_id")}>
               <select
                 value={productId}
-                onChange={(e) => setProductId(Number(e.target.value))}
+                onChange={(e) => {
+                  setProductId(Number(e.target.value));
+                  setPackageId("");
+                }}
                 className="h-9 w-full rounded-lg border bg-card px-3 text-sm outline-none focus:border-primary"
               >
                 {products.data?.map((p) => (
@@ -175,7 +195,8 @@ export function LicenseNewPage() {
                 ))}
               </select>
             </Field>
-            <Field label="Cihaz limiti *" error={err("device_limit")} hint="Firmanın satın aldığı cihaz sayısı">
+            <PackagePicker packages={packages} value={packageId} onChange={choosePackage} error={err("package_id")} />
+            <Field label="Cihaz limiti *" error={err("device_limit")} hint="Paketin varsayılanı; firmanın satın aldığı cihaz sayısı">
               <Input type="number" min={1} max={1000} value={deviceLimit} onChange={(e) => setDeviceLimit(Number(e.target.value))} />
             </Field>
             <Field label="Başlangıç *" error={err("starts_at")}>
@@ -184,6 +205,14 @@ export function LicenseNewPage() {
             <Field label="Bitiş *" error={err("expires_at")}>
               <Input type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
             </Field>
+            <div className="sm:col-span-2">
+              <OfflinePolicyPicker
+                value={offlineDays}
+                onChange={setOfflineDays}
+                canChooseExtended={canChooseExtended}
+                error={err("offline_grace_days")}
+              />
+            </div>
             <div className="sm:col-span-2">
               <Field label="Not" error={err("notes")}>
                 <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={1000} />

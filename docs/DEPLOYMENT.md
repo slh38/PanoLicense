@@ -35,6 +35,15 @@
 | Scheduler cron (`panolicense` kullanıcısı) | ✅ |
 | Canlı kontrol: `/api/v1/health` 200, `/api/v1/me` 401, panel sayfaları 200, `/.env` 404, QR Menü 200 | ✅ |
 | 72 bekleyen sistem güncellemesi | ⏳ ayrıca, olası reboot nedeniyle gece |
+| F3b imza anahtarı (canlı) | ⏳ yayın onayında: aşağıdaki "İmza anahtarı" adımları |
+
+## İmza anahtarı (F3b yayınında bir kez)
+Bu adım yapılmadan F3b kodu yayınlanırsa istemci uçları `503 signing_unavailable` döner (panel etkilenmez).
+1. `.env`: `LICENSE_SIGNING_KEY_PATH=/etc/panolicense/keys/signing-k1.pem`, `LICENSE_SIGNING_KEY_ID=k1`
+2. `sudo -u panolicense php artisan panolicense:signing-key` → anahtar oluşur (600), açık anahtar yazdırılır.
+   Açık anahtar Client/PanoPOS'a gömülür (kid `k1`). PHP-FPM `open_basedir` zaten `/etc/panolicense` içerir.
+3. **Yedek:** özel anahtar sunucu dışında şifreli saklanır (kaybolursa dağıtılmış istemciler doğrulayamaz).
+4. `php artisan optimize` (config önbelleği yeni yolu alsın).
 | F2a yayını `ade1f74` (2026-11-22): yedek → migration → panel; giriş zorunlu, demo veri yok, cookie secure+httponly | ✅ |
 
 ## Admin hesabı (canlı)
@@ -57,7 +66,7 @@ Aynı komut mevcut Admin'in parolasını sıfırlamak için de kullanılır.
 /var/backups/panolicense/      migration öncesi DB yedekleri (700)
 /var/www/panolicense/public    Nginx root (yalnız bu dizin web'e açık)
 /var/www/panolicense/public/spa  React panel build'i
-/etc/panolicense/keys/         İmza anahtarı (F3) — uygulama dışında, 700/600
+/etc/panolicense/keys/         İmza anahtarı signing-k1.pem (ES256) — uygulama dışında, klasör 700, dosya 600
 ```
 - Uygulama `panolicense` Linux kullanıcısıyla, kendi PHP-FPM havuzunda (`/run/php/panolicense.sock`) çalışır;
   QR Menü (root/PM2) ile süreç ve dosya ayrılır.
@@ -96,3 +105,61 @@ WordPress sitesi etkilenmez. Kayıt yayıldıktan sonra `certbot --nginx -d lisa
 ## 7. Yedekleme (planlı)
 Günlük `mysqldump` + `.env` + imza anahtarı (+ QR Menü `uploads`) yedeği; 7/24 çalışan Windows
 bilgisayar SSH ile çeker. Ayrıntı yedekleme görevinde belirlenecek.
+
+
+## F3b cihaz sahipliği geçişi (henüz canlıda uygulanmadı)
+- Yeni migration: 2026_11_27_120000_add_device_proof. Bu görev yalnız yerel panolicense_test ortamını kapsar.
+- Canlıya geçiş ayrı onayla; eski Client'lar challenge/cihaz anahtarı gönderemediğinden artık çalışmaz.
+  F4 Client hazır (yerel); PanoPOS entegrasyonu (F5) ve kontrollü cihaz geçişi hazır olmadan yayın yapılmaz.
+- Eski anahtarsız aktif kayda otomatik anahtar atanmaz; yetkili gerçek cihazı doğrulayıp release eder,
+  yeni cihaz anahtarıyla kanıtlı activate aynı satırı kota içinde bağlar. Ayrıntı: [CLIENT_API](CLIENT_API.md).
+- Laravel scheduler günlük süresi dolmuş challenge temizliğini çalıştırır; ek servis/dependency yoktur.
+
+## Lisans bazlı offline politika migration'ı (henüz canlıda uygulanmadı)
+2026_11_27_130000_add_license_offline_policy yalnız yerel test DB'de uygulandı.
+Mevcut kayıtlara varsayılan 7 gün ekler; global LICENSE_OFFLINE_GRACE_DAYS artık kullanılmaz.
+Canlı migration/yayın ayrı onay gerektirir. Politika ve 365 günlük uzaktan iptal sınırı:
+[LICENSING_RULES §22](LICENSING_RULES.md#i̇mzalı-lisans-ve-offline-2026-11-27).
+## Ürün/paket/modül migration'ı (henüz canlıda uygulanmadı)
+2026_11_28_100000_create_packages_and_modules: yalnız yerel dev/test DB'de uygulandı. Canlıda mevcut tüm PanoPOS lisansları
+Pro'ya eşlenir ve demo paketi Pro olur. Önce yedek alınır; F3b migration'larıyla birlikte ayrı onayla yayınlanır.
+
+## FAZ 2 canlı yayın planı (hazır, onay bekliyor — uygulanmadı)
+Kapsam: F3b (cihaz kanıtı, imzalı belge, 7/365) + panel 7/365 + katalog (ürün/paket/modül). Canlı: kod `9df87c8`,
+son migration `2026_11_25_100002`, lisans 0, cihaz 0 (2026-11-28 salt okunur kontrol). Eski istemci yok; geçiş riski düşük.
+
+**Bekleyen migration'lar (bu sırayla, `migrate --force` otomatik sıralar):**
+1. `2026_11_27_120000_add_device_proof` — devices: public_key/hash + unique; `device_challenges`
+2. `2026_11_27_130000_add_license_offline_policy` — licenses.offline_grace_days (varsayılan 7)
+3. `2026_11_28_100000_create_packages_and_modules` — packages/modules/eşleşmeler/license_module; PanoPOS 4 paket, demo Pro
+
+Ardından `panolicense:catalog-sync` (16 modül + matris). Yerel deneme modülleri/lisansları canlıya taşınmaz:
+katalog yalnız `config/catalog.php`'den gelir, veri taşıması yapılmaz.
+
+**Ön koşullar:** yerelde hedefli testler yeşil, `npm run build:deploy`, onaylı commit + push; kullanıcı onayı.
+
+**Adımlar (sunucu, root):**
+1. Kayıt: `git -C /opt/panolicense/repo rev-parse HEAD` (geri dönüş için, beklenen `9df87c8`).
+2. Yedek: `mysqldump` → `/var/backups/panolicense/pre-faz2-<tarih>.sql.gz` (700); `public/spa` →
+   `/var/backups/panolicense/spa-pre-faz2.tgz`; `.env` kopyası (600). Yedeğin açılabildiği `gunzip -t` ile kontrol.
+3. `sudo -u panolicense php artisan down` (yalnız lisans sitesi; QR Menü ayrı Nginx sitesi + PM2, etkilenmez).
+4. `sudo -u panolicense git pull` → `composer install --no-dev -o`.
+5. İmza anahtarı (bir kez): `install -d -o panolicense -g panolicense -m 700 /etc/panolicense/keys`;
+   `.env`: `LICENSE_SIGNING_KEY_PATH=/etc/panolicense/keys/signing-k1.pem`, `LICENSE_SIGNING_KEY_ID=k1`;
+   `sudo -u panolicense php artisan panolicense:signing-key` (var olan anahtarın üzerine yazmaz; dosya 600).
+   Yazdırılan **açık** anahtar FAZ 3'te Device Service'e gömülür.
+6. `php artisan migrate --force` → `php artisan panolicense:catalog-sync --dry-run` (çıktı kontrolü) →
+   `php artisan panolicense:catalog-sync`.
+7. Panel build'i `public/spa`'ya kopyalanır → `php artisan optimize` → `systemctl reload php8.3-fpm`
+   (QR Menü PHP kullanmaz) → `php artisan up`.
+8. **Özel anahtar yedeği (kullanıcı):** anahtar sunucu dışına şifreli arşivle (ör. 7-Zip AES-256) alınır; parola ve
+   anahtar sohbet, MD, Git veya loga yazılmaz. Anahtar kaybı = dağıtılmış istemciler doğrulayamaz.
+
+**Duman testi:** `/api/v1/health` 200; `/api/v1/me` 401; panel `/` ve `/urunler` 200; `/.env` 404; Admin girişi →
+Ürünler'de 4 paket ve 16 modül; `/client/challenge` geçersiz gövdeyle 422; QR Menü ana sayfası 200 (önceki kontrolle aynı).
+İmzalı belge uçtan uca: FAZ 3'te gerçek Device Service ile (canlıda deneme lisansı oluşturulmaz).
+
+**Geri dönüş (hata olursa):** `php artisan down` → `git checkout <kaydedilen commit>` → `composer install --no-dev -o`
+→ veritabanını `pre-faz2` dump'ından geri yükle (migrate:rollback yerine; lisans sayısı 0 olduğundan veri kaybı yok)
+→ `spa-pre-faz2.tgz` geri aç → `.env` yedeğini geri koy → `php artisan optimize` → `systemctl reload php8.3-fpm` → `up`.
+İmza anahtarı silinmez (zararsız; sonraki denemede aynı `k1` kullanılır).

@@ -20,6 +20,18 @@ suite("audit özetleri", () => {
   it("süre uzatmayı eski → yeni tarih olarak yazar", () => {
     expect(describe(entry("license.extend", { from: "2027-01-01", to: "2028-01-01" }))).toBe("01.01.2027 → 01.01.2028");
   });
+  it("offline politika değişimini eski → yeni gün olarak yazar", () => {
+    expect(describe(entry("license.offline_policy_change", { from: 7, to: 365 }))).toBe("7 gün → 365 gün");
+    expect(actionLabel("license.offline_policy_change")).toBe("Offline politikayı değiştirdi");
+  });
+  it("paket ve ek modül değişikliklerini okunur yazar", () => {
+    expect(describe(entry("license.package_change", { from: "PRO", to: "LITE" }))).toBe("PRO → LITE");
+    expect(describe(entry("license.modules_change", { added: ["backup"], removed: [] }))).toBe("eklendi: backup");
+    expect(describe(entry("catalog.package_update", { code: "PRO", modules_added: ["variant"], modules_removed: ["shift"] }))).toBe(
+      "PRO · +variant -shift",
+    );
+    expect(actionLabel("license.modules_change")).toBe("Ek modülleri değiştirdi");
+  });
   it("bilinmeyen işlemde ham adı gösterir", () => {
     expect(actionLabel("yeni.islem")).toBe("yeni.islem");
     expect(actionLabel("license.revoke")).toBe("Lisans iptal etti");

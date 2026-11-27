@@ -22,6 +22,7 @@ Ek olarak yalnız görevin dokunduğu alanları oku:
 | API, veritabanı, yetki, Client, offline, güvenlik | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | Lisans/cihaz/rol/iptal/süre/demo kuralları | [docs/LICENSING_RULES.md](docs/LICENSING_RULES.md) |
 | PanoPOS ↔ sunucu istemci uçları (demo, aktivasyon, kontrol) | [docs/CLIENT_API.md](docs/CLIENT_API.md) |
+| PanoPOS ortak sözleşmesi: modül kodları, paket matrisi, terminal/WebApi doğrulaması, fazlar (PanoPOS reposunda aynı kopya) | [docs/LICENSING_CONTRACT.md](docs/LICENSING_CONTRACT.md) |
 | Panel kodu, UI, tema, tasarım | [docs/UI_DESIGN.md](docs/UI_DESIGN.md) |
 | VPS yayını, Nginx, domain, sunucu durumu | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) |
 | Test, build, doğrulama | [docs/TESTING.md](docs/TESTING.md) |

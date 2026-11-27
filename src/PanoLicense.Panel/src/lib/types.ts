@@ -29,6 +29,13 @@ export interface License {
     tax_number: string | null;
   };
   product: { id: number; name: string };
+  /** Paket (yoksa null). */
+  package?: { id: number; code: string; name: string } | null;
+  /** Yalnız detayda: geçerli modüller = paket + lisansa özel ek modüller. İmzalı belgeye aynı kodlar girer. */
+  modules?: { id: number; code: string; name: string; source: "package" | "license" }[];
+  addon_module_ids?: number[];
+  /** Lisans bazlı offline çalışma izni (gün): 7 standart, 365 özel. Demo daima 7. */
+  offline_grace_days: number;
   device_limit: number;
   starts_at: string;
   expires_at: string;
@@ -67,8 +74,55 @@ export interface Customer {
   created_by: string | null;
 }
 
+export interface ModuleRef {
+  code: string;
+  name: string;
+}
+
+export interface ProductPackage {
+  id: number;
+  code: string;
+  name: string;
+  default_device_limit: number;
+  modules: ModuleRef[];
+}
+
+/** /products: lisans formu için aktif ürünler ve aktif paketleri. */
 export interface Product {
   id: number;
   code: string;
   name: string;
+  packages: ProductPackage[];
+}
+
+/** /catalog: Admin katalog yönetimi (pasifler dahil). */
+export interface CatalogModule {
+  id: number;
+  product_id: number;
+  code: string;
+  name: string;
+  description: string | null;
+  is_active: boolean;
+}
+
+export interface CatalogPackage {
+  id: number;
+  product_id: number;
+  code: string;
+  name: string;
+  default_device_limit: number;
+  sort_order: number;
+  is_active: boolean;
+  module_ids: number[];
+}
+
+export interface CatalogProduct {
+  id: number;
+  code: string;
+  name: string;
+  key_prefix: string;
+  is_active: boolean;
+  demo_package_id: number | null;
+  packages: CatalogPackage[];
+  modules: CatalogModule[];
 }

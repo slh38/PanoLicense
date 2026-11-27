@@ -36,7 +36,7 @@ class ClientActivationTest extends TestCase
 
     private function activate(string $seed, string $key = 'pan-1111-2222-3333'): \Illuminate\Testing\TestResponse
     {
-        return $this->postJson('/api/v1/client/activate', [
+        return $this->clientPost('/api/v1/client/activate', [
             'product_code' => 'PANOPOS',
             'license_key' => $key,
             'device' => ['fingerprint' => hash('sha256', $seed), 'name' => strtoupper($seed)],
@@ -78,7 +78,7 @@ class ClientActivationTest extends TestCase
         $this->assertSame(2, Device::count()); // serbest bırakılan silinmedi
 
         // Serbest bırakılan cihaz artık kontrolde reddedilir
-        $this->postJson('/api/v1/client/check', [
+        $this->clientPost('/api/v1/client/check', [
             'product_code' => 'PANOPOS', 'license_key' => 'PAN-1111-2222-3333',
             'device' => ['fingerprint' => hash('sha256', 'kasa-1')],
         ])->assertForbidden()->assertJson(['error' => 'device_not_activated']);
@@ -104,11 +104,11 @@ class ClientActivationTest extends TestCase
         $body = ['product_code' => 'PANOPOS', 'license_key' => 'PAN-1111-2222-3333', 'device' => ['fingerprint' => hash('sha256', 'kasa-1')]];
 
         Carbon::setTestNow('2026-11-25 10:20:00');
-        $this->postJson('/api/v1/client/check', $body)->assertOk();
+        $this->clientPost('/api/v1/client/check', $body)->assertOk();
         $this->assertSame('10:00', Device::first()->last_seen_at->format('H:i'));
 
         Carbon::setTestNow('2026-11-25 11:30:00');
-        $this->postJson('/api/v1/client/check', $body)->assertOk();
+        $this->clientPost('/api/v1/client/check', $body)->assertOk();
         $this->assertSame('11:30', Device::first()->last_seen_at->format('H:i'));
     }
 

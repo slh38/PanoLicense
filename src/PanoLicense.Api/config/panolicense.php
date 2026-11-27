@@ -1,15 +1,13 @@
 <?php
 
 return [
-    'version' => '0.2.0-f0',
-
-    // Onaylı kural: son başarılı doğrulamadan sonra en fazla 7 gün offline (docs/LICENSING_RULES.md).
-    'offline_grace_days' => (int) env('LICENSE_OFFLINE_GRACE_DAYS', 7),
+    'version' => '0.4.0',
 
     // Onaylı karar: PanoPOS kurulumunda başlatılan demo süresi (gün).
     'demo_days' => (int) env('LICENSE_DEMO_DAYS', 14),
 
-    // F3b: imza anahtarı. Dosya public dizininin DIŞINDA olmalıdır.
+    // İmzalı lisans belgesi: ECDSA P-256 (ES256). Özel anahtar dosyası public dizininin DIŞINDA, 600 izinli.
+    // Oluşturma: php artisan panolicense:signing-key. Anahtar değişirse kid de değişmeli (istemci kid'e göre seçer).
     'signing' => [
         'key_path' => env('LICENSE_SIGNING_KEY_PATH'),
         'key_id' => env('LICENSE_SIGNING_KEY_ID', 'k1'),

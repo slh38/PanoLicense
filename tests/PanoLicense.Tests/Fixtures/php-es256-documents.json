@@ -1,0 +1,36 @@
+{
+    "note": "Yalnız test: PHP LicenseSigner ile imzalandı. Özel anahtar saklanmadı.",
+    "kid": "fixture",
+    "public_key_pem": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEmi1hMNO7W6jdnxXNikk2yOn6AaTf\nr3Zk8HtqaJWyAwpC4xYW3xq5IwTGmB2tvbZ09gEC+dRagN1EGb+MtbRdTQ==\n-----END PUBLIC KEY-----\n",
+    "fingerprint": "80b2f897e93e81f769edd02733c0f3e41ecf29e43d76d10a263c67b726b1fe67",
+    "active": {
+        "v": 1,
+        "kid": "fixture",
+        "alg": "ES256",
+        "payload": "eyJ2IjoxLCJsaWNlbnNlX2tleSI6IlBBTi1GSVgwLTAwMDAtMDAwMSIsInByb2R1Y3QiOiJQQU5PUE9TIiwiY3VzdG9tZXIiOiJZxLFsZMSxeiBCw7xmZSIsInN0YXR1cyI6ImFjdGl2ZSIsInN0YXRlIjoiYWN0aXZlIiwiZGV2aWNlX2xpbWl0IjozLCJmaW5nZXJwcmludCI6IjgwYjJmODk3ZTkzZTgxZjc2OWVkZDAyNzMzYzBmM2U0MWVjZjI5ZTQzZDc2ZDEwYTI2M2M2N2I3MjZiMWZlNjciLCJkZXZpY2Vfc3RhdHVzIjoiYWN0aXZlIiwiZXhwaXJlc19hdCI6IjIwMjctMTEtMjciLCJpc3N1ZWRfYXQiOiIyMDI2LTExLTI3VDEwOjAwOjAwWiIsInZhbGlkX3VudGlsIjoiMjAyNi0xMi0wNFQxMDowMDowMFoiLCJkZXZpY2Vfa2V5X2hhc2giOiJhZWZmYzhiNDE3ZWQ0YzZmMTI2MDA2OTllNTYxMDdhNTFjYWUwOTQ1ODQ0YWI0MWZhYmE0MzU4MThmZjU4YTdkIn0",
+        "sig": "MEYCIQDwX6v4aOTFvddgN64lVVwQYKHo22hDCpjDySVQ7xlm6AIhALomuOpW0Zc_TT3nrk1s2LVnK8xXshzyaXUk3_9g7HX-"
+    },
+    "demo": {
+        "v": 1,
+        "kid": "fixture",
+        "alg": "ES256",
+        "payload": "eyJ2IjoxLCJsaWNlbnNlX2tleSI6IlBBTi1GSVgwLTAwMDAtMDAwMSIsInByb2R1Y3QiOiJQQU5PUE9TIiwiY3VzdG9tZXIiOiJZxLFsZMSxeiBCw7xmZSIsInN0YXR1cyI6ImRlbW8iLCJzdGF0ZSI6ImRlbW8iLCJkZXZpY2VfbGltaXQiOjEsImZpbmdlcnByaW50IjoiODBiMmY4OTdlOTNlODFmNzY5ZWRkMDI3MzNjMGYzZTQxZWNmMjllNDNkNzZkMTBhMjYzYzY3YjcyNmIxZmU2NyIsImRldmljZV9zdGF0dXMiOiJhY3RpdmUiLCJleHBpcmVzX2F0IjoiMjAyNi0xMi0xMSIsImlzc3VlZF9hdCI6IjIwMjYtMTEtMjdUMTA6MDA6MDBaIiwidmFsaWRfdW50aWwiOiIyMDI2LTEyLTA0VDEwOjAwOjAwWiIsImRldmljZV9rZXlfaGFzaCI6ImFlZmZjOGI0MTdlZDRjNmYxMjYwMDY5OWU1NjEwN2E1MWNhZTA5NDU4NDRhYjQxZmFiYTQzNTgxOGZmNThhN2QifQ",
+        "sig": "MEQCIGn1IlDoQDBsoM3hkVx5_rgYsC09nJjQ8vzPPw5MGG6pAiA83R3c2ErS8jD_b4kbCbbUFYQJTOVQ4rrXabtuiFvA7Q"
+    },
+    "revoked": {
+        "v": 1,
+        "kid": "fixture",
+        "alg": "ES256",
+        "payload": "eyJ2IjoxLCJsaWNlbnNlX2tleSI6IlBBTi1GSVgwLTAwMDAtMDAwMSIsInByb2R1Y3QiOiJQQU5PUE9TIiwiY3VzdG9tZXIiOiJZxLFsZMSxeiBCw7xmZSIsInN0YXR1cyI6InJldm9rZWQiLCJzdGF0ZSI6InJldm9rZWQiLCJkZXZpY2VfbGltaXQiOjMsImZpbmdlcnByaW50IjoiODBiMmY4OTdlOTNlODFmNzY5ZWRkMDI3MzNjMGYzZTQxZWNmMjllNDNkNzZkMTBhMjYzYzY3YjcyNmIxZmU2NyIsImRldmljZV9zdGF0dXMiOiJhY3RpdmUiLCJleHBpcmVzX2F0IjoiMjAyNy0xMS0yNyIsImlzc3VlZF9hdCI6IjIwMjYtMTEtMjdUMTA6MDA6MDBaIiwidmFsaWRfdW50aWwiOiIyMDI2LTEyLTA0VDEwOjAwOjAwWiIsImRldmljZV9rZXlfaGFzaCI6ImFlZmZjOGI0MTdlZDRjNmYxMjYwMDY5OWU1NjEwN2E1MWNhZTA5NDU4NDRhYjQxZmFiYTQzNTgxOGZmNThhN2QifQ",
+        "sig": "MEUCIQDi7Y4ZcLYlSGd1r-OhgeVQtBZu3S1UOqlvqmyf3mWLdAIgC0kbx85H1GeWwNr1udtk0Lu8UPiAo3bnERqLSa8zIRo"
+    },
+    "device_public_key_pem": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEysC56Kx/Gk7oVqsXZMHm6sgx1M+q\n72ZXvMSG4+fQIT8yvbbWsO4nD5M9Tv+zR7EoISh3sXgy+skN8KV+aNgLqw==\n-----END PUBLIC KEY-----\n",
+    "device_key_hash": "aeffc8b417ed4c6f12600699e56107a51cae0945844ab41faba435818ff58a7d",
+    "special": {
+        "v": 1,
+        "kid": "fixture",
+        "alg": "ES256",
+        "payload": "eyJ2IjoxLCJsaWNlbnNlX2tleSI6IlBBTi1GSVgwLTAwMDAtMDAwMSIsInByb2R1Y3QiOiJQQU5PUE9TIiwiY3VzdG9tZXIiOiJZxLFsZMSxeiBCw7xmZSIsInN0YXR1cyI6ImFjdGl2ZSIsInN0YXRlIjoiYWN0aXZlIiwiZGV2aWNlX2xpbWl0IjozLCJmaW5nZXJwcmludCI6IjgwYjJmODk3ZTkzZTgxZjc2OWVkZDAyNzMzYzBmM2U0MWVjZjI5ZTQzZDc2ZDEwYTI2M2M2N2I3MjZiMWZlNjciLCJkZXZpY2Vfc3RhdHVzIjoiYWN0aXZlIiwiZXhwaXJlc19hdCI6IjIwMzAtMTEtMjciLCJpc3N1ZWRfYXQiOiIyMDI2LTExLTI3VDEwOjAwOjAwWiIsInZhbGlkX3VudGlsIjoiMjAyNy0xMS0yN1QxMDowMDowMFoiLCJkZXZpY2Vfa2V5X2hhc2giOiJhZWZmYzhiNDE3ZWQ0YzZmMTI2MDA2OTllNTYxMDdhNTFjYWUwOTQ1ODQ0YWI0MWZhYmE0MzU4MThmZjU4YTdkIiwib2ZmbGluZV9ncmFjZV9kYXlzIjozNjV9",
+        "sig": "MEUCIQDD7rS4q0CnLXW17n7NTRHhX-Ra_OzUYUuigWXSZuAp4AIgVaZ3W43H1hpq6EQgKJbBtg1YhhjWx47Xk8ulXQvS6XI"
+    }
+}

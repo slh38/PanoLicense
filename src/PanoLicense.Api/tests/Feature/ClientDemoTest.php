@@ -21,7 +21,7 @@ class ClientDemoTest extends TestCase
 
     private function demo(array $override = []): \Illuminate\Testing\TestResponse
     {
-        return $this->postJson('/api/v1/client/demo', array_replace_recursive([
+        return $this->clientPost('/api/v1/client/demo', array_replace_recursive([
             'product_code' => 'PANOPOS',
             'device' => ['fingerprint' => $this->fp(), 'name' => 'KASA-1', 'app_version' => '1.0.0'],
             'customer' => ['name' => 'Ada Market', 'city' => 'Kayseri', 'phone' => '0352 000 00 00'],
@@ -124,7 +124,7 @@ class ClientDemoTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'license.approve_demo', 'subject_id' => $license->id]);
 
         // İstemci bir sonraki kontrolde aktif lisansı görür; anahtar değişmez.
-        $this->postJson('/api/v1/client/check', [
+        $this->clientPost('/api/v1/client/check', [
             'product_code' => 'PANOPOS', 'license_key' => $key, 'device' => ['fingerprint' => $this->fp()],
         ])->assertOk()->assertJson(['state' => 'active', 'device_limit' => 3]);
     }
@@ -164,7 +164,7 @@ class ClientDemoTest extends TestCase
         $this->actingAs($admin)->postJson("/api/v1/licenses/{$license->id}/revoke", ['reason' => 'Sahte kayıt'])
             ->assertOk()->assertJsonPath('data.state', 'revoked');
 
-        $this->postJson('/api/v1/client/check', [
+        $this->clientPost('/api/v1/client/check', [
             'product_code' => 'PANOPOS', 'license_key' => $key, 'device' => ['fingerprint' => $this->fp()],
         ])->assertOk()->assertJson(['state' => 'revoked']);
     }

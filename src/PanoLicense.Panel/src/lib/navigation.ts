@@ -3,7 +3,6 @@ import {
   KeyRound,
   LayoutDashboard,
   MonitorSmartphone,
-  Package,
   ScrollText,
   Settings,
   Users,
@@ -25,22 +24,8 @@ export const NAV_ITEMS: NavItem[] = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
   { path: "/lisanslar", label: "Lisanslar", icon: KeyRound, ability: "license.view" },
   { path: "/musteriler", label: "Müşteriler", icon: Users, ability: "customer.view" },
-  {
-    path: "/moduller",
-    label: "Modüller",
-    icon: Boxes,
-    ability: "product.manage",
-    description: "Ürünlere ait ek modüller (ör. Restoran, Üretim) burada tanımlanacak.",
-    phase: "F2+",
-  },
-  {
-    path: "/paketler",
-    label: "Paketler",
-    icon: Package,
-    ability: "product.manage",
-    description: "Lite, Pro gibi paketler; modül seti ve varsayılan cihaz limitiyle burada tanımlanacak.",
-    phase: "F2+",
-  },
+  /** Ürün, paket ve modül kataloğu (yalnız Admin). */
+  { path: "/urunler", label: "Ürünler", icon: Boxes, ability: "product.manage" },
   {
     path: "/cihazlar",
     label: "Cihazlar",

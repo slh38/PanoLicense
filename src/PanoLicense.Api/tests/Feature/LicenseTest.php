@@ -54,6 +54,7 @@ class LicenseTest extends TestCase
         return array_merge([
             'customer' => ['name' => 'Ada Market', 'city' => 'Kayseri'],
             'product_id' => $this->product->id,
+            'package_id' => \App\Models\Package::where('code', 'PRO')->value('id'),
             'device_limit' => 3,
             'starts_at' => '2026-11-22',
             'expires_at' => '2027-11-22',

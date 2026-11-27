@@ -8,6 +8,7 @@ use App\Http\Resources\LicenseResource;
 use App\Models\Customer;
 use App\Models\Device;
 use App\Models\License;
+use App\Models\Module;
 use App\Models\Product;
 use App\Support\Audit;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -42,7 +43,7 @@ class LicenseController extends Controller
         }
 
         $query = License::query()
-            ->with(['customer', 'product', 'creator', 'installer', 'approver'])
+            ->with(['customer', 'product', 'package', 'creator', 'installer', 'approver'])
             ->withCount('activeDevices');
 
         if ($scope === 'expiring') {
@@ -86,8 +87,14 @@ class LicenseController extends Controller
             'starts_at' => ['required', 'date'],
             'expires_at' => ['required', 'date', 'after:starts_at', 'after_or_equal:today'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'offline_grace_days' => ['sometimes', 'integer', Rule::in([7, 365])],
+            // Onay lisans vermektir: paket seçilebilir; verilmezse demonun paketi (Pro) kalır.
+            'package_id' => ['sometimes', 'integer', $this->activePackageRule($license->product_id)],
         ]);
 
+        if (($data['offline_grace_days'] ?? 7) == 365) {
+            Gate::authorize('license.offline_policy');
+        }
         $userId = $request->user()->id;
 
         try {
@@ -102,6 +109,8 @@ class LicenseController extends Controller
 
                 $locked->forceFill([
                     'status' => LicenseStatus::Active,
+                    'offline_grace_days' => (int) ($data['offline_grace_days'] ?? 7),
+                    'package_id' => $data['package_id'] ?? $locked->package_id,
                     'device_limit' => $data['device_limit'],
                     'starts_at' => $data['starts_at'],
                     'expires_at' => $data['expires_at'],
@@ -111,8 +120,10 @@ class LicenseController extends Controller
                     'approved_at' => now(),
                 ])->save();
 
+                $this->logOfflinePolicy($locked, 7, $locked->offlineGraceDays());
                 Audit::log('license.approve_demo', $locked, [
                     'customer' => $locked->customer->name,
+                    'package' => $locked->package()->value('code'),
                     'installer' => $locked->installer_username,
                     'device_limit' => $data['device_limit'],
                     'expires_at' => $data['expires_at'],
@@ -150,8 +161,70 @@ class LicenseController extends Controller
 
     private function loadDetail(License $license): License
     {
-        return $license->load(['customer', 'product', 'creator', 'revoker', 'installer', 'approver', 'devices'])
+        return $license->load(['customer', 'product', 'package.modules', 'addonModules', 'creator', 'revoker', 'installer', 'approver', 'devices'])
             ->loadCount('activeDevices');
+    }
+
+    /** Paket aynı ürüne ait ve aktif olmalı. */
+    private function activePackageRule(int $productId): \Illuminate\Validation\Rules\Exists
+    {
+        return Rule::exists('packages', 'id')->where('product_id', $productId)->where('is_active', true);
+    }
+
+    /**
+     * Paket değiştirme (yalnız Admin). Cihaz limiti ve lisansa özel ek modüller değişmez.
+     * Cihazlar yeni modülleri sonraki başarılı online kontrolde alır.
+     */
+    public function changePackage(Request $request, License $license): LicenseResource
+    {
+        $data = $request->validate(['package_id' => ['required', 'integer', $this->activePackageRule($license->product_id)]]);
+
+        DB::transaction(function () use ($license, $data) {
+            $locked = License::whereKey($license->id)->lockForUpdate()->firstOrFail();
+            if ($locked->status === LicenseStatus::Revoked) {
+                throw ValidationException::withMessages(['license' => 'İptal edilmiş lisansın paketi değiştirilemez.']);
+            }
+            $from = $locked->package()->value('code');
+            if ($locked->package_id !== (int) $data['package_id']) {
+                $locked->update(['package_id' => (int) $data['package_id']]);
+                Audit::log('license.package_change', $locked, ['from' => $from, 'to' => $locked->package()->value('code')]);
+            }
+        });
+
+        return new LicenseResource($this->loadDetail($license->fresh()));
+    }
+
+    /** Lisansa özel ek modüller (yalnız Admin): tam liste gönderilir; eklenen/kaldırılan loglanır. */
+    public function syncModules(Request $request, License $license): LicenseResource
+    {
+        $data = $request->validate([
+            'module_ids' => ['present', 'array'],
+            'module_ids.*' => ['integer', 'distinct', Rule::exists('modules', 'id')->where('product_id', $license->product_id)],
+        ]);
+
+        DB::transaction(function () use ($license, $data, $request) {
+            $locked = License::whereKey($license->id)->lockForUpdate()->firstOrFail();
+            if ($locked->status === LicenseStatus::Revoked) {
+                throw ValidationException::withMessages(['license' => 'İptal edilmiş lisansın modülleri değiştirilemez.']);
+            }
+            $wanted = array_map('intval', $data['module_ids']);
+            $current = $locked->addonModules()->pluck('modules.id')->all();
+            // Mevcut ek modüllerin "veren/zaman" bilgisi korunur; yalnız yeniler eklenir, çıkarılanlar kaldırılır.
+            $added = array_values(array_diff($wanted, $current));
+            $removed = array_values(array_diff($current, $wanted));
+            if ($added) {
+                $locked->addonModules()->attach($added, ['granted_by' => $request->user()->id, 'created_at' => now()]);
+            }
+            if ($removed) {
+                $locked->addonModules()->detach($removed);
+            }
+            if ($added || $removed) {
+                $codes = fn (array $ids) => $ids ? Module::whereIn('id', $ids)->orderBy('code')->pluck('code')->all() : [];
+                Audit::log('license.modules_change', $locked, ['added' => $codes($added), 'removed' => $codes($removed)]);
+            }
+        });
+
+        return new LicenseResource($this->loadDetail($license->fresh()));
     }
 
     /** Yeni lisans: mevcut firmaya veya aynı işlemde oluşturulan yeni firmaya. Tek transaction. */
@@ -170,8 +243,14 @@ class LicenseController extends Controller
             'starts_at' => ['required', 'date'],
             'expires_at' => ['required', 'date', 'after:starts_at'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'offline_grace_days' => ['sometimes', 'integer', Rule::in([7, 365])],
+            // Paket zorunlu ve seçilen ürüne ait, aktif olmalı.
+            'package_id' => ['required', 'integer', Rule::exists('packages', 'id')->where('product_id', (int) $request->input('product_id'))->where('is_active', true)],
         ]);
 
+        if (($data['offline_grace_days'] ?? 7) == 365) {
+            Gate::authorize('license.offline_policy');
+        }
         $userId = $request->user()->id;
         $product = Product::findOrFail($data['product_id']);
 
@@ -191,17 +270,22 @@ class LicenseController extends Controller
                     'license_key' => $this->uniqueKey($product->key_prefix),
                     'customer_id' => $customer->id,
                     'product_id' => $product->id,
+                    'package_id' => (int) $data['package_id'],
                     'device_limit' => $data['device_limit'],
                     'starts_at' => $data['starts_at'],
                     'expires_at' => $data['expires_at'],
                     'status' => LicenseStatus::Active,
+                    'offline_grace_days' => (int) ($data['offline_grace_days'] ?? 7),
                     'notes' => $data['notes'] ?? null,
                     'created_by' => $userId,
                 ]);
 
+                $this->logOfflinePolicy($license, 7, $license->offlineGraceDays());
                 Audit::log('license.create', $license, [
+                    'offline_grace_days' => $license->offlineGraceDays(),
                     'customer' => $customer->name,
                     'product' => $product->code,
+                    'package' => $license->package()->value('code'),
                     'device_limit' => $license->device_limit,
                     'expires_at' => $data['expires_at'],
                 ]);
@@ -216,10 +300,37 @@ class LicenseController extends Controller
             throw $e;
         }
 
-        return (new LicenseResource($license->load(['customer', 'product', 'creator'])))
+        return (new LicenseResource($license->load(['customer', 'product', 'package.modules', 'addonModules', 'creator'])))
             ->response()->setStatusCode(201);
     }
 
+    /** Politika lisans bazında; yalnız Admin. Değişim ve log aynı transaction içindedir. */
+    public function offlinePolicy(Request $request, License $license): LicenseResource
+    {
+        Gate::authorize('license.offline_policy');
+        $data = $request->validate([
+            'offline_grace_days' => ['required', 'integer', Rule::in([7, 365])],
+        ]);
+        DB::transaction(function () use ($license, $data) {
+            $locked = License::whereKey($license->id)->lockForUpdate()->firstOrFail();
+            $this->ensureActive($locked);
+            $from = $locked->offlineGraceDays();
+            $to = (int) $data['offline_grace_days'];
+            if ($from !== $to) {
+                $locked->update(['offline_grace_days' => $to]);
+                $this->logOfflinePolicy($locked, $from, $to);
+            }
+        });
+
+        return new LicenseResource($this->loadDetail($license->fresh()));
+    }
+
+    private function logOfflinePolicy(License $license, int $from, int $to): void
+    {
+        if ($from !== $to) {
+            Audit::log('license.offline_policy_change', $license, ['from' => $from, 'to' => $to]);
+        }
+    }
     public function extend(Request $request, License $license): LicenseResource
     {
         $data = $request->validate([

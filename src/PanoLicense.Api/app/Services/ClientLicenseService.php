@@ -18,6 +18,76 @@ use Illuminate\Support\Facades\DB;
  */
 class ClientLicenseService
 {
+    /** P-256 açık anahtarını normalize eder; kimlik SHA-256(SPKI DER)'dir. */
+    public function deviceKey(array $device): array
+    {
+        $key = @openssl_pkey_get_public($device['public_key'] ?? '');
+        $details = $key ? openssl_pkey_get_details($key) : false;
+        if (! $details || ($details['ec']['curve_name'] ?? null) !== 'prime256v1') {
+            throw new ClientLicenseException('invalid_device_key', 422, 'P-256 açık anahtarı gerekli.');
+        }
+        $pem = $details['key'];
+        $der = base64_decode(preg_replace('/-----[^-]+-----|\s/', '', $pem), true);
+
+        return [...$device, 'public_key' => $pem, 'public_key_hash' => hash('sha256', $der)];
+    }
+
+    /** Challenge rastgele ve 120 saniyeliktir; mesaj aynen UTF-8 olarak imzalanır. */
+    public function challenge(Product $product, string $operation, string $licenseKey, array $device): array
+    {
+        $device = $this->deviceKey($device);
+        $id = bin2hex(random_bytes(32));
+        $expires = now()->addSeconds(120)->startOfSecond();
+        $message = json_encode([
+            'purpose' => 'panolicense-device-proof-v1',
+            'challenge_id' => $id, 'operation' => $operation,
+            'product' => $product->code, 'license_key' => $licenseKey,
+            'fingerprint' => $device['fingerprint'], 'device_key_hash' => $device['public_key_hash'],
+            'expires_at' => $expires->toIso8601ZuluString(),
+        ], JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        DB::table('device_challenges')->insert([
+            'id' => $id, 'operation' => $operation, 'product_id' => $product->id,
+            'license_key' => $licenseKey, 'fingerprint_hash' => $device['fingerprint'],
+            'public_key_hash' => $device['public_key_hash'], 'message' => $message,
+            'expires_at' => $expires, 'used_at' => null,
+        ]);
+
+        return ['challenge_id' => $id, 'message' => $message, 'expires_at' => $expires->toIso8601ZuluString()];
+    }
+
+    /** Atomik tüketim: eşzamanlı tekrarların yalnız biri geçer; iş kuralı reddinde de tüketilir. */
+    public function prove(Product $product, string $operation, string $licenseKey, array $device, array $proof): array
+    {
+        $device = $this->deviceKey($device);
+        $challenge = DB::table('device_challenges')->where('id', $proof['challenge_id'])
+            ->where('operation', $operation)->where('product_id', $product->id)
+            ->where('license_key', $licenseKey)->where('fingerprint_hash', $device['fingerprint'])
+            ->where('public_key_hash', $device['public_key_hash'])
+            ->whereNull('used_at')->where('expires_at', '>', now())->first();
+        $signature = base64_decode($proof['signature'], true);
+        if (! $challenge || $signature === false ||
+            @openssl_verify($challenge->message, $signature, $device['public_key'], OPENSSL_ALGO_SHA256) !== 1) {
+            throw new ClientLicenseException('invalid_device_proof', 403, 'Cihaz sahiplik kanıtı geçersiz veya süresi dolmuş.');
+        }
+        $consumed = DB::table('device_challenges')->where('id', $challenge->id)
+            ->whereNull('used_at')->where('expires_at', '>', now())->update(['used_at' => now()]);
+        if ($consumed !== 1) {
+            throw new ClientLicenseException('invalid_device_proof', 403, 'Challenge daha önce kullanılmış.');
+        }
+
+        return $device;
+    }
+
+    private function assertDeviceKey(Device $stored, array $device): void
+    {
+        if (! $stored->public_key_hash) {
+            throw new ClientLicenseException('device_reenrollment_required', 403, 'Eski cihaz kaydı yetkili tarafından serbest bırakılıp yeniden aktive edilmeli.');
+        }
+        if (! hash_equals($stored->public_key_hash, $device['public_key_hash'])) {
+            throw new ClientLicenseException('device_key_mismatch', 403, 'Cihaz anahtarı kayıtla eşleşmiyor.');
+        }
+    }
+
     /**
      * Demo kaydı. Bir cihaz bir ürün için yalnız bir kez demo alır: aynı parmak izi tekrar gelirse
      * (yeniden kurulum dahil) yeni 14 gün açılmaz, mevcut kayıt döner.
@@ -31,13 +101,18 @@ class ClientLicenseService
             Product::whereKey($product->id)->lockForUpdate()->first();
 
             $existing = Device::query()
-                ->where('fingerprint_hash', $device['fingerprint'])
+                ->where(fn ($q) => $q->where('fingerprint_hash', $device['fingerprint'])
+                    ->orWhere('public_key_hash', $device['public_key_hash']))
                 ->whereHas('license', fn ($q) => $q->where('product_id', $product->id))
                 ->with('license')
                 ->latest('id')
                 ->first();
 
             if ($existing) {
+                $this->assertDeviceKey($existing, $device);
+                if ($existing->fingerprint_hash !== $device['fingerprint']) {
+                    throw new ClientLicenseException('device_key_mismatch', 403, 'Anahtar başka parmak izine bağlı.');
+                }
                 $this->touch($existing, $device, $ip, force: true);
 
                 return [$existing->license, $existing, false];
@@ -55,6 +130,7 @@ class ClientLicenseService
                 'license_key' => $this->uniqueKey($product->key_prefix),
                 'customer_id' => $newCustomer->id,
                 'product_id' => $product->id,
+                'package_id' => $product->demo_package_id, // onaylı: demo Pro paketiyle açılır
                 'device_limit' => 1,
                 'starts_at' => $today,
                 'expires_at' => $today->copy()->addDays(config('panolicense.demo_days')),
@@ -71,6 +147,7 @@ class ClientLicenseService
                 'customer' => $newCustomer->name,
                 'installer' => $installerUsername ?: null,
                 'installer_matched' => (bool) $installer,
+                'device_key_hash' => $device['public_key_hash'],
                 'device' => $device['name'] ?? null,
             ], userId: null);
 
@@ -90,11 +167,19 @@ class ClientLicenseService
 
             $existing = $license->devices()->where('fingerprint_hash', $device['fingerprint'])->first();
             if ($existing?->isActive()) {
+                $this->assertDeviceKey($existing, $device);
                 $this->touch($existing, $device, $ip, force: true);
 
                 return [$license, $existing, false];
             }
 
+            if ($existing && $existing->public_key_hash) {
+                $this->assertDeviceKey($existing, $device);
+            }
+            $sameKey = $license->devices()->where('public_key_hash', $device['public_key_hash'])->first();
+            if ($sameKey && $sameKey->id !== $existing?->id) {
+                throw new ClientLicenseException('device_key_mismatch', 403, 'Anahtar başka cihaz kaydına bağlı.');
+            }
             $activeCount = $license->activeDevices()->count();
             if ($activeCount >= $license->device_limit) {
                 throw ClientLicenseException::deviceLimitExceeded($license->device_limit);
@@ -104,6 +189,7 @@ class ClientLicenseService
                 // Daha önce serbest bırakılmış cihaz geri geliyor: yeniden yer tüketir.
                 $existing->forceFill([
                     'status' => Device::STATUS_ACTIVE, 'released_at' => null, 'released_by' => null,
+                    'public_key' => $device['public_key'], 'public_key_hash' => $device['public_key_hash'],
                 ])->save();
                 $this->touch($existing, $device, $ip, force: true);
                 $result = $existing;
@@ -112,6 +198,7 @@ class ClientLicenseService
             }
 
             Audit::log('license.device_activate', $license, [
+                'device_key_hash' => $device['public_key_hash'],
                 'device' => $device['name'] ?? null,
                 'active_devices' => $activeCount + 1,
                 'device_limit' => $license->device_limit,
@@ -137,6 +224,7 @@ class ClientLicenseService
             throw ClientLicenseException::deviceNotActivated();
         }
 
+        $this->assertDeviceKey($found, $device);
         $this->touch($found, $device, $ip);
 
         return [$license, $found];
@@ -169,6 +257,7 @@ class ClientLicenseService
             'app_version' => $device['app_version'] ?? null,
             'status' => Device::STATUS_ACTIVE,
             'last_ip' => $ip,
+            'public_key' => $device['public_key'], 'public_key_hash' => $device['public_key_hash'],
             'first_seen_at' => $now,
             'last_seen_at' => $now,
         ]);

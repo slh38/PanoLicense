@@ -32,7 +32,7 @@ export async function ensureCsrfCookie(force = false) {
   await fetch("/sanctum/csrf-cookie", { credentials: "same-origin", headers: { Accept: "application/json" } });
 }
 
-type Options = { method?: "GET" | "POST" | "PATCH"; body?: unknown };
+type Options = { method?: "GET" | "POST" | "PATCH" | "PUT"; body?: unknown };
 
 export async function api<T>(path: string, { method = "GET", body }: Options = {}, retry = true): Promise<T> {
   if (method !== "GET") await ensureCsrfCookie();

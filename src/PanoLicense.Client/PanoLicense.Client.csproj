@@ -8,4 +8,8 @@
     <RootNamespace>PanoLicense.Client</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="PanoLicense.Tests" />
+  </ItemGroup>
+
 </Project>

@@ -21,7 +21,7 @@ class AuditLogTest extends TestCase
         $customer = Customer::create(['name' => 'Ada Market', 'created_by' => $bayi->id]);
         $license = License::create([
             'license_key' => 'PAN-AAAA-BBBB-CCCC', 'customer_id' => $customer->id,
-            'product_id' => Product::first()->id, 'device_limit' => 1,
+            'product_id' => Product::first()->id, 'package_id' => \App\Models\Package::where('code', 'PRO')->value('id'), 'device_limit' => 1,
             'starts_at' => '2026-01-01', 'expires_at' => '2027-01-01', 'status' => 'active', 'created_by' => $bayi->id,
         ]);
         Audit::log('license.create', $license, ['customer' => 'Ada Market'], userId: $bayi->id);

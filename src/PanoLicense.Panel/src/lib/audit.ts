@@ -21,6 +21,15 @@ export const ACTION_LABEL: Record<string, string> = {
   "license.approve_demo": "Demoyu onayladı",
   "license.device_activate": "Cihaz aktive edildi (PanoPOS)",
   "license.device_release": "Cihazı serbest bıraktı",
+  "license.offline_policy_change": "Offline politikayı değiştirdi",
+  "license.package_change": "Paketi değiştirdi",
+  "license.modules_change": "Ek modülleri değiştirdi",
+  "catalog.product_create": "Ürün ekledi",
+  "catalog.product_update": "Ürünü güncelledi",
+  "catalog.package_create": "Paket ekledi",
+  "catalog.package_update": "Paketi güncelledi",
+  "catalog.module_create": "Modül ekledi",
+  "catalog.module_update": "Modülü güncelledi",
   "customer.create": "Firma ekledi",
   "user.create": "Kullanıcı oluşturdu",
   "user.update": "Kullanıcı güncelledi",
@@ -34,6 +43,7 @@ export const GROUPS = [
   { value: "license", label: "Lisans" },
   { value: "customer", label: "Firma" },
   { value: "user", label: "Kullanıcı" },
+  { value: "catalog", label: "Ürün / paket / modül" },
 ];
 
 /** İşlemi yapan: panel kullanıcısı; yoksa istemciden gelen işlemlerde "PanoPOS". */
@@ -75,6 +85,25 @@ export function describe(entry: AuditEntry): string {
       return [d.device, d.device_limit ? `${d.active_devices}/${d.device_limit}` : null].filter(Boolean).join(" · ");
     case "license.device_release":
       return String(d.device ?? "");
+    case "license.package_change":
+      return `${d.from ?? "—"} → ${d.to ?? "—"}`;
+    case "license.modules_change": {
+      const list = (v: unknown) => (Array.isArray(v) && v.length ? v.join(", ") : null);
+      return [list(d.added) && `eklendi: ${list(d.added)}`, list(d.removed) && `kaldırıldı: ${list(d.removed)}`].filter(Boolean).join(" · ");
+    }
+    case "catalog.product_create":
+    case "catalog.package_create":
+    case "catalog.module_create":
+    case "catalog.product_update":
+    case "catalog.package_update":
+    case "catalog.module_update": {
+      const parts = [d.product, d.code].filter(Boolean).join(" · ");
+      const mods = [Array.isArray(d.modules_added) && d.modules_added.length ? `+${d.modules_added.join(", ")}` : null,
+        Array.isArray(d.modules_removed) && d.modules_removed.length ? `-${d.modules_removed.join(", ")}` : null].filter(Boolean).join(" ");
+      return [parts, mods].filter(Boolean).join(" · ");
+    }
+    case "license.offline_policy_change":
+      return `${d.from ?? "?"} gün → ${d.to ?? "?"} gün`;
     case "customer.create":
       return String(d.name ?? "");
     case "auth.login_failed":

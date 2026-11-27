@@ -35,3 +35,21 @@ Kod: `src/components/layout` (Sidebar, Topbar, AppLayout), `src/components/dashb
 - Menü ve buton görünürlüğü `GET /api/v1/me` dönen `permissions` listesine göre ayarlanır;
   asıl yetki kontrolü her zaman sunucudadır.
 - Yayın: `npm run build:deploy` → Laravel `public/spa`, aynı domain.
+
+## Offline çalışma politikası (2026-11-27)
+- Bileşen: `src/components/licenses/OfflinePolicy.tsx` (iki seçenekli kart grubu + uyarı); yardımcılar `src/lib/offline.ts`.
+- **Yeni lisans** ve **demo onayı** formlarında "Offline çalışma": Standart · 7 gün (varsayılan) / Özel · 365 gün.
+  `license.offline_policy` yetkisi yoksa (User) 365 kilitli gösterilir ve istek alanı hiç gönderilmez (sunucu 7 uygular).
+- **Lisans detayı:** her lisansta "Offline çalışma" satırı (365 turuncu rozet); demo için "daima 7 gün" notu.
+  Aktif ticari lisansta yalnız Admin "Offline çalışma politikası" kartıyla 7 ↔ 365 değiştirir
+  (`POST /licenses/{id}/offline-policy`). Demo ve iptal edilmiş lisansta kart yoktur.
+- 365 seçiliyken kısa uyarı: cihaz internete bağlanmazsa iptal/politika değişikliği offline izin bitene kadar
+  etkili olmayabilir. Değişiklik geçmişte "Offline politikayı değiştirdi · 7 gün → 365 gün" olarak görünür.
+
+## Ürünler (2026-11-28)
+- Menüdeki "Modüller" ve "Paketler" boş sayfaları tek **Ürünler** sayfasına (`/urunler`, yalnız Admin) dönüştü.
+  Solda ürün listesi + "Yeni ürün"; sağda ürün adı/aktiflik/demo paketi ve **Paketler | Modüller** sekmeleri.
+  Paket kartında ad, varsayılan cihaz limiti ve modül kutucukları; modül listesinde hangi paketlerde olduğu görünür.
+- Yeni lisans ve demo onayı: ürün → paket seçimi (`PackagePicker`), paket modülleri ön izleme; cihaz limiti paketten dolar.
+- Lisans detayı: Paket ve Modüller satırı (ek modül "· ek" rozetiyle); Admin için "Paket ve modüller" kartı.
+- Lisans tablosunda ürün rozetinin altında paket adı.
