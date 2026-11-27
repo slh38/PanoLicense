@@ -11,7 +11,7 @@
   <!-- NuGet paketi: tools/pack-client.ps1 ile üretilir (docs/CLIENT_PACKAGE.md). Sürüm yalnız burada değişir. -->
   <PropertyGroup>
     <PackageId>PanoLicense.Client</PackageId>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Authors>Joker Yazılım</Authors>
     <Company>Joker Yazılım</Company>
     <Product>PanoLicense</Product>

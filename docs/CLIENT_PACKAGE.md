@@ -1,6 +1,6 @@
 # PanoLicense.Client NuGet Paketi
 
-Sürüm: **1.0.0** · Hedef: `net8.0` (bağımlılık yok) · Uyumluluk: .NET 8 (PanoPOS WebApi) ve .NET 10 (PanoPOS Device Service)
+Sürüm: **1.0.1** (resmî paket onay bekliyor; son resmî: 1.0.0) · Hedef: `net8.0` (bağımlılık yok) · Uyumluluk: .NET 8 (PanoPOS WebApi) ve .NET 10 (PanoPOS Device Service)
 doğrulandı (2026-11-28). Kullanım rehberi PanoPOS tarafında: `PanoPos/docs/LICENSING_INTEGRATION.md` §3.
 
 ## Üretim
@@ -38,3 +38,4 @@ powershell -ExecutionPolicy Bypass -File tools\pack-client.ps1
 | Sürüm | Tarih | Kaynak | Not |
 |---|---|---|---|
 | 1.0.0 | 2026-11-28 | `2a91b681a6a3b28a32b46e2dccd145b76031366a` | F4 Client + modüller (`HasModule`); ilk paket. 41 389 bayt. SHA-256 `3f7fc9b3db1df9e28a200ba5eea94ad4976f4eecfa77d8046d5ee70770eb2d91` |
+| 1.0.1 | 2026-11-28 | resmî üretim onay bekliyor | Ticari yetki kanıtı: `LicenseManager.CreateCommercialProof(challenge)`, `GetSignedRevocationDocument()`; ürün sunucusu için `CommercialProofVerifier` (`Verify`, `ReadRevocation`), `CommercialProofFormat`. Mevcut davranış değişmedi. |

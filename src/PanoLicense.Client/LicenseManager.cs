@@ -129,6 +129,70 @@ public sealed class LicenseManager : ILicenseClient, IAsyncDisposable
                modules.Contains(moduleCode, StringComparer.Ordinal);
     }
 
+    /// <summary>
+    /// Ürün sunucusunun (ör. PanoPOS WebApi) challenge'ı için ticari yetki kanıtı üretir (ağ/disk yok).
+    /// Belge, açık anahtar ve imza aynı kilit altında, o anki taze yerel karardan alınır; ticari işlem kapalıysa
+    /// (iptal, süre/offline bitişi, saat şüphesi, red, kalıcı yazma hatası, online doğrulama gereksinimi) kanıt üretilmez.
+    /// Özel anahtar dışarı verilmez. Doğrulama: <see cref="CommercialProofVerifier"/>.
+    /// </summary>
+    public CommercialProofResult CreateCommercialProof(string challenge)
+    {
+        if (!CommercialProofFormat.IsValidChallenge(challenge))
+            return new CommercialProofResult(false, "invalid_challenge", null, _status);
+
+        lock (_stateLock)
+        {
+            if (_disposed || _device is null || _deviceKey is null)
+                return new CommercialProofResult(false, "not_started", null, _status);
+
+            var now = _clock.Now();
+            var (status, _) = Evaluate(now);
+            var document = _document;
+            var envelope = _state.Document;
+            var allowed = !_persistPending && !_requiresOnline && !_clock.Suspicious &&
+                          status.State.AllowsCommercialOperations() &&
+                          status.CommercialAllowedUntil is { } until && now < until &&
+                          document is not null && envelope is not null && document.LicenseKey == _state.LicenseKey;
+            if (!allowed)
+            {
+                var reason = _persistPending ? "state_write_failed"
+                    : _requiresOnline ? "online_verification_required"
+                    : _clock.Suspicious ? "clock_rollback"
+                    : !status.State.AllowsCommercialOperations() ? status.Reason
+                    : document is null || envelope is null ? "no_valid_document"
+                    : "offline_grace_exceeded";
+                return new CommercialProofResult(false, reason, null, status);
+            }
+
+            var message = CommercialProofFormat.BuildMessage(challenge, _options.ProductCode, document!.LicenseKey, _device.KeyHash, envelope!);
+            string signature;
+            try
+            {
+                signature = Convert.ToBase64String(_deviceKey.SignData(System.Text.Encoding.UTF8.GetBytes(message),
+                    HashAlgorithmName.SHA256, DSASignatureFormat.Rfc3279DerSequence));
+            }
+            catch (CryptographicException)
+            {
+                return new CommercialProofResult(false, "device_key_unavailable", null, status);
+            }
+
+            return new CommercialProofResult(true, null, new CommercialProof(challenge, envelope!, _device.PublicKeyPem,
+                signature, document.LicenseKey, document.Modules, status.CommercialAllowedUntil!.Value), status);
+        }
+    }
+
+    /// <summary>
+    /// Sunucudan imzalı olarak öğrenilmiş iptal belgesi (opak zarf metni); ürün sunucusuna kalıcı iptal için iletilir.
+    /// İmzalı iptal yoksa null. Ticari yetki vermez.
+    /// </summary>
+    public string? GetSignedRevocationDocument()
+    {
+        lock (_stateLock)
+            return _document is { Status: "revoked" } && _state.Document is { } envelope && _document.LicenseKey == _state.LicenseKey
+                ? envelope
+                : null;
+    }
+
     /// <summary>Anlık karar; izin bitişi geçmiş ama saatlik kontrol henüz çalışmamışsa OfflineExpired döner.</summary>
     public Task<LicenseState> GetStateAsync(CancellationToken cancellationToken = default)
     {

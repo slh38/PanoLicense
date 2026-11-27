@@ -175,3 +175,19 @@ operation=activate/check challenge'ları ile activate/check mevcut lisanslarda p
 Yeni yönetim lisansı oluşturma aktif ürün gerektirir. İmzalı 7/365 günlük izin ve mevcut paket/modüller
 aynı kurallarla yenilenir; ürün pasifliği imzalı lisans iptali üretmez.
 İş kuralı: [LICENSING_RULES §32](LICENSING_RULES.md#ürün-paket-ve-modül-2026-11-28-onay).
+## Ürün sunucusu için ticari yetki kanıtı (Client 1.0.1)
+PanoLicense sunucusuna yeni uç eklenmedi; bu bölüm Client'ın ürün içi (ör. PanoPOS Device Service → WebApi) kanıtıdır.
+- **Üretim (cihaz):** `LicenseManager.CreateCommercialProof(challenge)` → `CommercialProofResult`. Belge, açık anahtar ve imza
+  tek kilit altında, o anki taze yerel karardan alınır. Ticari işlem kapalıysa (iptal, lisans/offline bitişi, saat şüphesi,
+  kesin red, kalıcı yazma hatası, online doğrulama gereksinimi, belge yok) kanıt üretilmez, `Reason` döner. Özel anahtar verilmez.
+- **Mesaj:** `panolicense-commercial-proof-v1\n{product}\n{license_key}\n{device_key_hash}\n{sha256(zarf metni)}\n{challenge}`;
+  imza ECDSA P-256/SHA-256 DER, standart base64. Challenge 16–256 karakter `[A-Za-z0-9._:-]`.
+  Amaç satırı sunucu cihaz kanıtından (`panolicense-device-proof-v1`) farklıdır.
+- **Zarf opak taşınır:** kanıt zarf metninin özetine bağlıdır; zarf JSON nesnesi olarak yeniden serialize edilmez, metin alanı olarak taşınır.
+- **Doğrulama (ürün sunucusu):** `CommercialProofVerifier(kid→PEM, product).Verify(challenge, zarf, açık anahtar, imza, güvenilir şimdi)`:
+  challenge biçimi, P-256 anahtar, zarf imzası, ürün, `device_key_hash = SHA-256(SPKI)`, cihaz aktif, durum active/demo,
+  `issued_at - 5 dk ≤ şimdi < min(valid_until, lisans bitişi)`, kanıt imzası. Tek kullanımlık challenge takibi doğrulayanın işidir.
+  Hata kodları: `invalid_challenge`, `malformed`, `invalid_device_key`, `unknown_kid`, `bad_signature`, `identity_mismatch`,
+  `device_released`, `revoked`, `unknown_status`, `document_from_future`, `license_expired`, `demo_expired`, `offline_grace_exceeded`, `bad_proof`.
+- **İptal iletimi:** `GetSignedRevocationDocument()` (cihaz) → `ReadRevocation(zarf)` (sunucu). İmzalı iptal kanıt gerektirmez,
+  yalnız kısıtlar; iptal belgesi `Verify` ile ticari kanıt olarak kabul edilmez.

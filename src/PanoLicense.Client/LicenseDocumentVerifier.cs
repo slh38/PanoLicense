@@ -40,6 +40,17 @@ public sealed class LicenseDocumentVerifier : IDisposable
     /// </summary>
     public LicenseDocument? Verify(string envelopeJson, LicenseIdentity expected, out string? error)
     {
+        var document = VerifySignature(envelopeJson, out error);
+        if (document is null) return null;
+        return expected.Matches(document) ? document : Fail("identity_mismatch", out error);
+    }
+
+    /// <summary>
+    /// Yalnız imza + biçim doğrulaması. Kimlik eşleşmesini ÇAĞIRAN yapmalıdır; bu yüzden internal'dır
+    /// (dışarıda <see cref="Verify"/> veya <see cref="CommercialProofVerifier"/> kullanılır).
+    /// </summary>
+    internal LicenseDocument? VerifySignature(string envelopeJson, out string? error)
+    {
         error = null;
         try
         {
@@ -63,9 +74,6 @@ public sealed class LicenseDocumentVerifier : IDisposable
             var document = JsonSerializer.Deserialize<LicenseDocument>(payload);
             if (document is null || document.Version != SupportedVersion)
                 return Fail("bad_payload", out error);
-
-            if (!expected.Matches(document))
-                return Fail("identity_mismatch", out error);
 
             return document;
         }
