@@ -37,4 +37,4 @@ powershell -ExecutionPolicy Bypass -File tools\pack-client.ps1
 ## Sürüm geçmişi
 | Sürüm | Tarih | Kaynak | Not |
 |---|---|---|---|
-| 1.0.0 | 2026-11-28 | commit sonrası üretilecek (FAZ 4.1a) | F4 Client + modüller (`HasModule`); ilk paket. SHA-256 resmî üretimde yazılır. |
+| 1.0.0 | 2026-11-28 | `2a91b681a6a3b28a32b46e2dccd145b76031366a` | F4 Client + modüller (`HasModule`); ilk paket. 41 389 bayt. SHA-256 `3f7fc9b3db1df9e28a200ba5eea94ad4976f4eecfa77d8046d5ee70770eb2d91` |
