@@ -96,3 +96,26 @@ yalnız lisans karar mantığı, imza/offline doğrulama, yetki veya şema deği
 - `CatalogSyncTest`: onaylı matris ve Pro demo; tekrar çalıştırmada mükerrer kayıt/audit yok; Admin ad/açıklama/pasiflik/
   eşleşme/limit/demo değişiklikleri ezilmez; önceden var olan modül eşleşmesine dokunulmaz, hiçbir şey silinmez;
   `--attach-missing` yalnız ekler; `--dry-run` yazmaz; Lite imzalı belgesi `["quick_sale"]`.
+
+## FAZ 3.3 canlı kabul testi (2026-11-27, `bd4948d`)
+Canlı sunucuda, TEST adlı kayıtlarla; gerçek CNG anahtarları (cihaz A TPM) ve canlı `k1` açık anahtarıyla .NET Client.
+Araç yalnız geçici (repo dışı); test sonunda TEST lisansları iptal edildi, cihazlar serbest bırakıldı, kayıt silinmedi.
+
+| Senaryo | Sonuç |
+|---|---|
+| Oturumsuz erişim (catalog, licenses, products, audit-logs, users, modules) 401 | PASS |
+| Admin `/me`: Admin-only yetkiler açık; User (bellekte, kayıtsız) Gate: yalnız varsayılan 3 yetki, pasif User her şey red | PASS |
+| Katalog: LITE 1, PANO 7, RESTAURANT 7, PRO 13 modül; 16 modül | PASS |
+| Demo: 14 gün, Pro, 13 modül, TPM anahtar, imza Client'ta doğrulandı | PASS |
+| Demo onayı → ticari (PANO), Client check → Active + PANO modülleri | PASS |
+| Panelden TEST lisansı (LITE, limit 1, 365 gün) + aktivasyon | PASS |
+| Cihaz limiti: ikinci cihaz `device_limit_exceeded` (Denied) | PASS |
+| Offline yeniden başlatma: 7 gün (issued+7) ve 365 gün (issued+365, lisans bitişinden önce); izin uzamaz | PASS |
+| Cihaz serbest bırakma: yeni cihaz aktive olur; serbest cihaz eski 365 günlük belgeye dönmeden kapanır | PASS |
+| Paket değiştirme (LITE→PRO, PANO→LITE) + ek modül `cloud_backup`; cihaz limiti değişmez; offline'da eski liste, online kontrolde yeni liste | PASS |
+| İptal: Client imzalı iptali öğrenir, offline yeniden başlatmada da kapalı, modüller kapalı | PASS |
+| İşlem geçmişi: demo/onay/oluşturma/aktivasyon/serbest bırakma/paket/ek modül/iptal logları | PASS |
+
+Gözlem: lisans oluşturmada `license.offline_policy_change` logu `license.create`'ten önce yazılıyor (aynı transaction;
+yalnız sıralama, işlevsel etkisi yok). User HTTP 403'ü canlıda parola girilmeden yapılamadığı için Gate ile doğrulandı;
+HTTP 403 testleri PHPUnit'te kapsanıyor.

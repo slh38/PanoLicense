@@ -163,3 +163,14 @@ katalog yalnız `config/catalog.php`'den gelir, veri taşıması yapılmaz.
 → veritabanını `pre-faz2` dump'ından geri yükle (migrate:rollback yerine; lisans sayısı 0 olduğundan veri kaybı yok)
 → `spa-pre-faz2.tgz` geri aç → `.env` yedeğini geri koy → `php artisan optimize` → `systemctl reload php8.3-fpm` → `up`.
 İmza anahtarı silinmez (zararsız; sonraki denemede aynı `k1` kullanılır).
+
+## FAZ 2 / bd4948d canlı yayını (2026-11-27, yapıldı)
+- Kod `bd4948d`; migration'lar `add_device_proof`, `add_license_offline_policy`, `create_packages_and_modules` uygulandı.
+- `catalog-sync`: kuru çalıştırma → gerçek (+16 modül, +28 eşleşme) → tekrar (+0). 4 paket matrisi onaylı tabloyla aynı; demo Pro.
+- İmza anahtarı `k1` oluşturuldu (P-256, 600, `panolicense`); PHP-FPM erişimi `/client/challenge` 200 ile doğrulandı.
+  Açık anahtar: [keys/panolicense-k1.pub.pem](keys/panolicense-k1.pub.pem). Sunucu dışı şifreli yedek (AES-256, PBKDF2) alındı:
+  kullanıcının bilgisayarı + USB bellek; ikisi de parolayla açılıp SPKI parmak iziyle doğrulandı, sunucudaki geçici kopya silindi.
+- Yedekler `/var/backups/panolicense/*-20261127-135816-pre-bd4948d*` (DB dump, `spa` arşivi, `.env`); doğrulandı.
+- Not: `php artisan optimize` view önbelleğinde "resources/views yok" hatası verir (SPA, Blade yok); config, event ve
+  route önbellekleri oluşur. Sonraki yayınlarda `config:cache && route:cache && event:cache` kullanılır.
+- Duman testi: health 200 (0.4.0), `/api/v1/me` 401, `/`, `/urunler`, `/lisanslar` 200, `/.env` 404; QR Menü 200, PM2 restart 0.

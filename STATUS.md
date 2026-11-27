@@ -15,7 +15,8 @@ Son güncelleme: 2026-11-28 · Faz: **FAZ 2 — Katalog ve yayın hazırlığı*
 
 | Alan | Durum | Not |
 |---|---|---|
-| Repo | ✅ | `slh38/PanoLicense` private. Canlıda `9df87c8` (F3a). F3b, F4, panel 7/365, ürün/paket/modül ve FAZ 2 katalog tek commit için hazır; **canlıya yayınlanmadı**. |
+| Repo | ✅ | `slh38/PanoLicense` private. **Canlıda `bd4948d`** (F3b, F4, panel 7/365, ürün/paket/modül, FAZ 2 katalog; 2026-11-27). İmza anahtarı `k1` canlıda. |
+| Canlı kabul (FAZ 3.3) | ✅ canlı | 2026-11-27: 12 senaryo PASS (demo→ticari, gerçek TPM cihaz, limit, 7/365 offline, serbest bırakma, paket/ek modül, iptal kalıcılığı, loglar). TEST lisansları iptal, cihazlar serbest; ayrıntı TESTING "FAZ 3.3". |
 | Giriş / kullanıcılar / loglar | ✅ canlı | Kullanıcı adı + parola, yetki kutucukları, pasifleştirme, `/loglar`, Türkçe mesajlar. |
 | Lisans (panel) | ✅ canlı | Yeni lisans, ±30 gün süresi dolacaklar, arama, detay, Admin: süre uzatma + iptal. |
 | Demo kaydı | ✅ canlı | `POST /client/demo`: 14 gün, cihaz limiti 1, kurulumu yapan (kullanıcı adı eşleşmesi), cihaz başına tek demo. |
