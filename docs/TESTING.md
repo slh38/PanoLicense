@@ -12,6 +12,7 @@ yalnız lisans karar mantığı, imza/offline doğrulama, yetki veya şema deği
 | Panel | `npm run build` (tsc dahil) + ilgili Vitest + tarayıcıda light/dark görsel kontrol |
 | Aynı domain yayını | `npm run build:deploy` + `php artisan serve` ile `/`, bir menü yolu ve `/api/v1/health` |
 | Client (.NET) | `dotnet build PanoLicense.sln` + ilgili xUnit testleri |
+| Client paketi | `tools/pack-client.ps1` + .NET 8 ve .NET 10 tüketici derleme/çalıştırma ([CLIENT_PACKAGE](CLIENT_PACKAGE.md)) |
 
 - Testler gerçek MySQL 8'de koşar (SQLite değil) — MySQL'e özgü davranışlar (kilit, üretilmiş sütun) test edilebilsin.
 - Test verisi uydurmadır; gerçek müşteri verisi kullanılmaz.

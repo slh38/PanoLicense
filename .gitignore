@@ -35,6 +35,9 @@ npm-debug.log*
 Thumbs.db
 .DS_Store
 
+# Paket çıktıları (tools/pack-client.ps1)
+artifacts/
+
 # Ajan/yerel çalışma çıktıları
 .run-logs/
 .claude/settings.local.json

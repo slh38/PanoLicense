@@ -8,6 +8,24 @@
     <RootNamespace>PanoLicense.Client</RootNamespace>
   </PropertyGroup>
 
+  <!-- NuGet paketi: tools/pack-client.ps1 ile üretilir (docs/CLIENT_PACKAGE.md). Sürüm yalnız burada değişir. -->
+  <PropertyGroup>
+    <PackageId>PanoLicense.Client</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Joker Yazılım</Authors>
+    <Company>Joker Yazılım</Company>
+    <Product>PanoLicense</Product>
+    <Description>PanoLicense istemci kütüphanesi: cihaz anahtarı (CNG/TPM), challenge kanıtı, imzalı lisans belgesi (ES256) doğrulama, offline 7/365 ve modül kontrolü. Sunucu imza açık anahtarını içermez; ürün kendisi gömer.</Description>
+    <PackageTags>panolicense;license;licensing</PackageTags>
+    <Deterministic>true</Deterministic>
+    <IncludeSymbols>false</IncludeSymbols>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="PanoLicense.Tests" />
   </ItemGroup>
