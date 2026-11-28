@@ -53,3 +53,15 @@ Kod: `src/components/layout` (Sidebar, Topbar, AppLayout), `src/components/dashb
 - Yeni lisans ve demo onayı: ürün → paket seçimi (`PackagePicker`), paket modülleri ön izleme; cihaz limiti paketten dolar.
 - Lisans detayı: Paket ve Modüller satırı (ek modül "· ek" rozetiyle); Admin için "Paket ve modüller" kartı.
 - Lisans tablosunda ürün rozetinin altında paket adı.
+
+## Süreli / ömür boyu lisans (FAZ 6.2a.5)
+- "Lisans türü" seçimi Offline politika seçimiyle aynı kart-radyo düzenindedir (`LicenseTypePicker`); yeni renk/kütüphane yok.
+  Ömür boyu yalnız `license.perpetual` (Admin) ile seçilir; User'da kilit simgesi ve gerekçe görünür.
+- Ömür boyu seçilince bitiş alanı gizlenir ve istek `expires_at: null` taşır; süreli lisansta bitiş zorunlu ve başlangıçtan sonra.
+- Liste "Bitiş" sütunu ve detay "Lisans türü / Geçerlilik" satırları türü gösterir (ömür boyu: "Ömür boyu", "… tarihinden itibaren · bitiş yok").
+  Boş tarih tek başına ömür boyu sayılmaz; çelişkili kayıt "Bilinmiyor" / "—" görünür.
+- Dönüşüm kartı yalnız Admin + aktif süreli lisansta; iki adımlı onay korunan anahtar/cihaz/limit/paket/modül/offline
+  bilgisini ve geri alınamazlığı yazar. Ömür boyunda süre uzatma ve ters dönüşüm hiç gösterilmez; iptal/demoda dönüşüm yok.
+- Dağıtım bayrakları kapalıyken ömür boyu seçimi ve dönüşüm onayında bilgi notu gösterilir; sunucunun
+  "henüz açılmadı" hatası alan/kart hatası olarak aynen görünür. Panel bayrak durumunu önceden okuyamaz (STATUS: API eksiği).
+- Mantık `lib/licenseType.ts`'tedir (görünürlük + form ön doğrulaması); asıl yetki/bayrak kontrolü sunucudadır.

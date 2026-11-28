@@ -19,6 +19,7 @@ export const STATE_LABEL: Record<LicenseState, string> = {
   expiring: "Süresi Dolacak",
   expired: "Süresi Doldu",
   revoked: "İptal",
+  invalid: "Geçersiz kayıt",
 };
 
 export const STATE_VARIANT: Record<LicenseState, "default" | "success" | "warning" | "danger" | "outline"> = {
@@ -28,6 +29,7 @@ export const STATE_VARIANT: Record<LicenseState, "default" | "success" | "warnin
   expiring: "warning",
   expired: "danger",
   revoked: "outline",
+  invalid: "danger",
 };
 
 /** Kurulumu yapan: eşleşen personel adı, eşleşmeyen kullanıcı adı veya son kullanıcı. */

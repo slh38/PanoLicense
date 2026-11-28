@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, Field, Input, Textarea } from "@/components/ui/input";
 import { OfflinePolicyPicker } from "@/components/licenses/OfflinePolicy";
+import { LicenseTypePicker } from "@/components/licenses/LicenseTypePicker";
 import { PackagePicker } from "@/components/licenses/PackagePicker";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { isoDatePlus } from "@/lib/format";
+import { licenseTypeBody, licenseTypeErrors, PERPETUAL_ABILITY, type LicenseType } from "@/lib/licenseType";
 import { OFFLINE_POLICY_ABILITY, offlinePolicyBody, STANDARD_OFFLINE_DAYS, type OfflineGraceDays } from "@/lib/offline";
 import type { Customer, License, Paginated, Product, ProductPackage } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
@@ -20,6 +22,7 @@ export function LicenseNewPage() {
   const navigate = useNavigate();
   const { can } = useAuth();
   const canChooseExtended = can(OFFLINE_POLICY_ABILITY);
+  const canPerpetual = can(PERPETUAL_ABILITY);
   const products = useApi<Product[]>("/products");
 
   const [mode, setMode] = useState<Mode>("new");
@@ -30,6 +33,7 @@ export function LicenseNewPage() {
   const [packageId, setPackageId] = useState<number | "">("");
   const [deviceLimit, setDeviceLimit] = useState(1);
   const [startsAt, setStartsAt] = useState(isoDatePlus(0));
+  const [licenseType, setLicenseType] = useState<LicenseType>("term");
   const [expiresAt, setExpiresAt] = useState(isoDatePlus(365));
   const [notes, setNotes] = useState("");
   const [offlineDays, setOfflineDays] = useState<OfflineGraceDays>(STANDARD_OFFLINE_DAYS);
@@ -56,15 +60,17 @@ export function LicenseNewPage() {
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    setBusy(true);
-    setErrors({});
     setMessage(null);
+    const typeErrors = licenseTypeErrors(licenseType, startsAt, expiresAt, canPerpetual);
+    setErrors(typeErrors);
+    if (Object.keys(typeErrors).length) return;
+    setBusy(true);
     const body: Record<string, unknown> = {
       product_id: productId,
       package_id: packageId === "" ? null : packageId,
       device_limit: deviceLimit,
       starts_at: startsAt,
-      expires_at: expiresAt,
+      ...licenseTypeBody(licenseType, expiresAt),
       notes: notes || null,
       ...offlinePolicyBody(offlineDays, canChooseExtended),
     };
@@ -202,9 +208,14 @@ export function LicenseNewPage() {
             <Field label="Başlangıç *" error={err("starts_at")}>
               <Input type="date" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
             </Field>
-            <Field label="Bitiş *" error={err("expires_at")}>
-              <Input type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
-            </Field>
+            <div className="sm:col-span-2">
+              <LicenseTypePicker value={licenseType} onChange={setLicenseType} canPerpetual={canPerpetual} error={err("license_type")} />
+            </div>
+            {licenseType === "term" && (
+              <Field label="Bitiş *" error={err("expires_at")}>
+                <Input type="date" min={startsAt} value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
+              </Field>
+            )}
             <div className="sm:col-span-2">
               <OfflinePolicyPicker
                 value={offlineDays}

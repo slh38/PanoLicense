@@ -1,7 +1,8 @@
 import { Store } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
-import { formatDate, installerLabel, STATE_LABEL, STATE_VARIANT } from "@/lib/format";
+import { installerLabel, STATE_LABEL, STATE_VARIANT } from "@/lib/format";
+import { expiryLabel } from "@/lib/licenseType";
 import type { License } from "@/lib/types";
 
 /**
@@ -58,7 +59,7 @@ export function LicenseTable({ rows, empty }: { rows: License[]; empty: string }
               <td className="whitespace-nowrap px-4 py-3 tabular-nums">
                 {l.active_device_count !== undefined ? `${l.active_device_count}/${l.device_limit}` : l.device_limit}
               </td>
-              <td className="whitespace-nowrap px-4 py-3 tabular-nums">{formatDate(l.expires_at)}</td>
+              <td className="whitespace-nowrap px-4 py-3 tabular-nums">{expiryLabel(l)}</td>
               <td className="px-4 py-3">
                 <Badge variant={STATE_VARIANT[l.state]}>{STATE_LABEL[l.state]}</Badge>
               </td>

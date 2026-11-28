@@ -1,4 +1,4 @@
-export type LicenseState = "demo" | "demo_expired" | "active" | "expiring" | "expired" | "revoked";
+export type LicenseState = "demo" | "demo_expired" | "active" | "expiring" | "expired" | "revoked" | "invalid";
 
 export interface Person {
   id: number;
@@ -38,7 +38,10 @@ export interface License {
   offline_grace_days: number;
   device_limit: number;
   starts_at: string;
-  expires_at: string;
+  /** FAZ 6.2a: süreli (demo dahil) veya ömür boyu. Ömür boyu yalnız açık tür + null bitişle geçerlidir. */
+  license_type: "term" | "perpetual";
+  /** Süreli lisansta YYYY-MM-DD; ömür boyunda null. */
+  expires_at: string | null;
   status: "demo" | "active" | "revoked";
   state: LicenseState;
   source: "panel" | "demo";

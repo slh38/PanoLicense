@@ -148,3 +148,12 @@ HTTP 403 testleri PHPUnit'te kapsanıyor.
   mevcut migration'lar test fixture'ıyla uygulandı. Yeni migration, canlı/dev DB işlemi yok.
 - Client 1.1.0 ve dar v1 iptal okuyucusu çalışılmadı; geçmiş 76 test önceki fazın kaydıdır.
   Tam regresyon, .NET/panel build ve paket üretimi yapılmadı.
+
+## FAZ 6.2a.5 — panel süreli/ömür boyu arayüzü
+- Vitest: `lib/licenseType.test.ts` 8 yeni test (tür/bitiş gösterimi, null tarih ≠ ömür boyu, süreli bitiş zorunluluğu,
+  ömür boyu yalnız Admin, istek gövdesi, tek yönlü dönüşüm, iptal/demo/ömür boyu kısıtları, audit metinleri).
+  Panel test paketinin tamamı 28/28 PASS; `tsc -b` ve `npm run build` temiz.
+- İzole ekran kabulü: scratchpad'de bellek içi sahte API (port 8000, Vite proxy hedefi) + headless Edge/CDP ile
+  22/22 senaryo PASS (liste, Admin/User yeni lisans, bayrak kapalı reddi, dönüşüm onay/red/başarı, ömür boyu ve iptal detayı,
+  Admin/User demo onayı, 1024 genişlikte yatay taşma yok). Gerçek Laravel/MySQL, canlı API ve TEST lisansı kullanılmadı.
+- Backend PHPUnit ve Client testleri tekrar çalıştırılmadı (önceki başarılı kayıtlar geçerli). Canlı v2 ile kabul FAZ 6.2a.6'dadır.

@@ -65,7 +65,7 @@ export function DashboardPage() {
           <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
             {isAdmin && (
               <>
-                <StatCard title="Aktif Lisans" value={fmt.format(data.stats.active ?? 0)} icon={KeyRound} footer={<span className="text-muted-foreground">Süresi dolmamış</span>} />
+                <StatCard title="Aktif Lisans" value={fmt.format(data.stats.active ?? 0)} icon={KeyRound} footer={<span className="text-muted-foreground">Süresi dolmamış veya ömür boyu</span>} />
                 <StatCard title="Müşteri" value={fmt.format(data.stats.customers ?? 0)} icon={Users} tone="navy" footer={<span className="text-muted-foreground">Aktif firma</span>} />
                 <StatCard title="Aktif Cihaz" value={fmt.format(data.stats.devices ?? 0)} icon={MonitorSmartphone} footer={<span className="text-muted-foreground">Tüm lisanslarda</span>} />
               </>

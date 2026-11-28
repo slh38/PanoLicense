@@ -11,7 +11,7 @@
 - Aşağıdaki eski faz/yayın notları tarihçedir; bu görevin güncel canlı doğrulaması değildir.
   Önceki MD turu b2f70c1 ile kapandı. Bu tur FAZ 6.2a.2b Backend + hedefli testler; yalnız kullanıcı ek onayıyla izole test DB migration'ı yapıldı, canlı işlem/commit/push yok.
 
-Son güncelleme: 2026-11-28 · Faz: **FAZ 6.2a.3 — Client 1.1.0 ve resmî paket tamamlandı; PanoPOS entegrasyonu bekliyor.** FAZ 6.2a.2 Backend commit/push tamamlandı. Ortak sözleşme: [LICENSING_CONTRACT](docs/LICENSING_CONTRACT.md) v2.3; güncel karar ve gerçek uygulama ayrımı yukarıdadır.
+Son güncelleme: 2026-11-28 · Faz: **FAZ 6.2a.5 — panel süreli/ömür boyu arayüzü yerel olarak tamamlandı ve onaylandı; gerçek EXE ve API/DB kabulü (FAZ 6.2a.6) bekliyor.** FAZ 6.2a.3 Client 1.1.0 ve resmî paket tamamlandı. FAZ 6.2a.2 Backend commit/push tamamlandı. Ortak sözleşme: [LICENSING_CONTRACT](docs/LICENSING_CONTRACT.md) v2.3; güncel karar ve gerçek uygulama ayrımı yukarıdadır.
 
 ## Karar geçmişi
 - 2026-11-22: İlk iskelet ASP.NET Core + SQL Server + IIS idi → **Laravel 13 (PHP 8.3+) + MySQL 8**'e geçildi. Sunucu tarafında .NET yok.
@@ -125,3 +125,22 @@ Son güncelleme: 2026-11-28 · Faz: **FAZ 6.2a.3 — Client 1.1.0 ve resmî pake
 - 1.0.1 paketi değişmedi. 111 başarılı test tekrar edilmedi; gerçek API/DB E2E hâlâ yapılmadı.
   PanoPOS entegrasyonu/kabulü bekliyor. Bayraklar açılmadı; canlı/DB/migration işlemi yok.
 - Bu kapanış yalnız Client/paket ve kayıtlarıdır; FAZ 6.2a.4 başlamadı.
+
+## FAZ 6.2a.5 — Panel süreli / ömür boyu arayüzü (yerel tamamlandı ve onaylandı; gerçek EXE ve API/DB kabulü bekliyor)
+- Yeni lisans ve demo onayı: "Lisans türü" seçimi (Süreli / Ömür boyu), dört paketin hepsinde. Ömür boyu yalnız Admin;
+  User'da kilitli. Ömür boyunda bitiş alanı gizli, istek açık `expires_at: null`; süreli lisansta bitiş zorunlu.
+  Demo oluşturma kuralları değişmedi.
+- Lisans detayı: "Lisans türü" ve geçerlilik satırı; Admin'e tek yönlü "Ömür boyuna dönüştür" kartı ve
+  korunan anahtar/cihaz/limit/paket/ek modül/offline bilgisini yazan onay ekranı. Ömür boyunda süre uzatma yok,
+  ters dönüşüm seçeneği yok, iptal edilmiş ve demo lisansta dönüşüm yok.
+- Liste "Bitiş" sütunu, dashboard "Aktif lisans" açıklaması, audit metinleri (`license.convert_perpetual`,
+  oluşturma/onayda ömür boyu) ve sunucunun `invalid` durumu ayrıştırıldı.
+- Dağıtım bayrakları kapalıyken ömür boyu işlemlerinde bilgi notu ve sunucunun "henüz açılmadı" hatası açıkça gösterilir.
+- Hedefli Vitest 28/28 (8 yeni), `tsc -b` ve panel build temiz; izole sahte API + headless Edge ile 22/22 ekran senaryosu
+  ([TESTING](docs/TESTING.md)). Backend, Client, ortak v2.3 sözleşmesi, env/bayraklar ve canlı ortam değişmedi.
+- **Kararlar (2026-11-28, kullanıcı onaylı):**
+  1. Geçici dağıtım bayrağı için yeni API geliştirilmeyecek; panel not + sunucu reddini göstermeye devam eder
+     (bayraklar koordineli kabulden sonra kaldırılacağı için).
+  2. `GET /licenses` lisans türü filtresi ve türe göre müşteri sayaçları sonraya bırakıldı.
+  3. Cihazlar sayfası (şu an boş durum) FAZ 7 sürüm ve cihaz takip yönetimine eklendi.
+- Canlı v2 ile kabul, gerçek cihazın türü alması ve bayrak açık canlı akışlar FAZ 6.2a.6 listesindedir. Commit/push yok.

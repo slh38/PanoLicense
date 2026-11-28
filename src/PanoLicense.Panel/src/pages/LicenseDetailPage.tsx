@@ -1,4 +1,4 @@
-import { ArrowLeft, Ban, CalendarPlus, Check, CheckCircle2, CloudOff, Copy, Package as PackageIcon, Puzzle, Save, Unplug } from "lucide-react";
+import { ArrowLeft, Ban, CalendarPlus, Check, CheckCircle2, CloudOff, Copy, Infinity as InfinityIcon, Package as PackageIcon, Puzzle, Save, Unplug } from "lucide-react";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, Field, Input, Textarea } from "@/components/ui/input";
 import { OfflinePolicyPicker, OfflineRevokeWarning } from "@/components/licenses/OfflinePolicy";
+import { LicenseTypePicker, PerpetualRolloutNote } from "@/components/licenses/LicenseTypePicker";
 import { PackagePicker } from "@/components/licenses/PackagePicker";
 import { api, ApiError } from "@/lib/api";
 import {
@@ -20,6 +21,16 @@ import {
 } from "@/lib/offline";
 import { actionLabel, actorName, describe, type AuditEntry } from "@/lib/audit";
 import { useAuth } from "@/lib/auth";
+import {
+  canConvertToPerpetual,
+  canExtend,
+  isPerpetual,
+  licenseTypeBody,
+  licenseTypeErrors,
+  licenseTypeLabel,
+  PERPETUAL_ABILITY,
+  type LicenseType,
+} from "@/lib/licenseType";
 import { formatDate, formatDateTime, installerLabel, isoDatePlus, STATE_LABEL, STATE_VARIANT } from "@/lib/format";
 import type { CatalogProduct, License, Product } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
@@ -43,7 +54,6 @@ export function LicenseDetailPage() {
   const [copied, setCopied] = useState(false);
 
   const license = data?.data;
-  const isActive = license?.status === "active";
 
   async function copyKey() {
     if (!license) return;
@@ -98,8 +108,15 @@ export function LicenseDetailPage() {
             <Row label="Cihaz">
               {license.active_device_count ?? 0} / {license.device_limit} aktif
             </Row>
+            <Row label="Lisans türü">
+              <Badge variant={isPerpetual(license) ? "success" : "outline"}>
+                {isPerpetual(license) && <InfinityIcon />} {licenseTypeLabel(license)}
+              </Badge>
+            </Row>
             <Row label={license.status === "demo" ? "Demo süresi" : "Geçerlilik"}>
-              {formatDate(license.starts_at)} – {formatDate(license.expires_at)}
+              {isPerpetual(license)
+                ? `${formatDate(license.starts_at)} tarihinden itibaren · bitiş yok`
+                : `${formatDate(license.starts_at)} – ${formatDate(license.expires_at)}`}
             </Row>
             <Row label="Offline çalışma">
               <span className="inline-flex flex-wrap items-center gap-2">
@@ -175,13 +192,20 @@ export function LicenseDetailPage() {
       {can("audit.view") && (
         <LicenseHistory
           licenseId={license.id}
-          version={`${license.expires_at}${license.status}${license.active_device_count ?? 0}${license.offline_grace_days}${license.package?.id}${(license.addon_module_ids ?? []).join()}`}
+          version={`${license.license_type}${license.expires_at}${license.status}${license.active_device_count ?? 0}${license.offline_grace_days}${license.package?.id}${(license.addon_module_ids ?? []).join()}`}
         />
       )}
 
-      {license.status !== "revoked" && ((isActive && can("license.extend")) || can("license.revoke")) && (
+      {canConvertToPerpetual(license, can) && (
+        <ConvertPerpetualCard
+          license={license}
+          onDone={(l) => { setData({ data: l }); setNotice("Lisans ömür boyuna dönüştürüldü. Cihazlar yeni türü bir sonraki online kontrolde alır."); }}
+        />
+      )}
+
+      {license.status !== "revoked" && (canExtend(license, can) || can("license.revoke")) && (
         <div className="grid gap-4 md:grid-cols-2">
-          {isActive && can("license.extend") && (
+          {canExtend(license, can) && (
             <ExtendCard license={license} onDone={(l) => { setData({ data: l }); setNotice("Süre uzatıldı."); }} />
           )}
           {can("license.revoke") && (
@@ -204,8 +228,10 @@ function ApproveCard({ license, onDone }: { license: License; onDone: (l: Licens
   });
   const { can } = useAuth();
   const canChooseExtended = can(OFFLINE_POLICY_ABILITY);
+  const canPerpetual = can(PERPETUAL_ABILITY);
   const [deviceLimit, setDeviceLimit] = useState(1);
   const [startsAt, setStartsAt] = useState(isoDatePlus(0));
+  const [licenseType, setLicenseType] = useState<LicenseType>("term");
   const [expiresAt, setExpiresAt] = useState(isoDatePlus(365));
   const [notes, setNotes] = useState("");
   const [offlineDays, setOfflineDays] = useState<OfflineGraceDays>(STANDARD_OFFLINE_DAYS);
@@ -220,9 +246,11 @@ function ApproveCard({ license, onDone }: { license: License; onDone: (l: Licens
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    setBusy(true);
-    setErrors({});
     setMessage(null);
+    const typeErrors = licenseTypeErrors(licenseType, startsAt, expiresAt, canPerpetual);
+    setErrors(typeErrors);
+    if (Object.keys(typeErrors).length) return;
+    setBusy(true);
     try {
       const res = await api<{ data: License }>(`/licenses/${license.id}/approve`, {
         method: "POST",
@@ -230,7 +258,7 @@ function ApproveCard({ license, onDone }: { license: License; onDone: (l: Licens
           customer: Object.fromEntries(Object.entries(customer).map(([k, v]) => [k, v.trim() || null])),
           device_limit: deviceLimit,
           starts_at: startsAt,
-          expires_at: expiresAt,
+          ...licenseTypeBody(licenseType, expiresAt),
           notes: notes || null,
           ...offlinePolicyBody(offlineDays, canChooseExtended),
           ...(packageId === "" ? {} : { package_id: packageId }),
@@ -284,9 +312,14 @@ function ApproveCard({ license, onDone }: { license: License; onDone: (l: Licens
           <Field label="Başlangıç *" error={err("starts_at")}>
             <Input type="date" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
           </Field>
-          <Field label="Bitiş *" error={err("expires_at")}>
-            <Input type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
-          </Field>
+          <div className="sm:col-span-2">
+            <LicenseTypePicker value={licenseType} onChange={setLicenseType} canPerpetual={canPerpetual} error={err("license_type")} />
+          </div>
+          {licenseType === "term" && (
+            <Field label="Bitiş *" error={err("expires_at")}>
+              <Input type="date" min={startsAt} value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
+            </Field>
+          )}
           <div className="sm:col-span-2">
             <OfflinePolicyPicker
               value={offlineDays}
@@ -592,6 +625,81 @@ function LicenseHistory({ licenseId, version }: { licenseId: number; version: st
   );
 }
 
+/**
+ * Süreli → ömür boyu tek yönlü dönüşüm (yalnız Admin, yalnız aktif süreli lisans).
+ * Onay ekranı korunan bilgileri ve geri alınamazlığı açıkça yazar.
+ */
+function ConvertPerpetualCard({ license, onDone }: { license: License; onDone: (l: License) => void }) {
+  const [confirming, setConfirming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const deviceCount = license.active_device_count ?? 0;
+  const moduleCount = license.modules?.length ?? 0;
+
+  async function convert() {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await api<{ data: License }>(`/licenses/${license.id}/convert-perpetual`, {
+        method: "POST",
+        body: { license_type: "perpetual" },
+      });
+      onDone(res.data);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.firstMessage() : "Sunucuya ulaşılamadı.");
+    } finally {
+      setBusy(false);
+      setConfirming(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Ömür boyu lisansa dönüştür</CardTitle>
+        <span className="text-xs text-muted-foreground">Yalnız Admin · loglanır</span>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {error && <Alert>{error}</Alert>}
+        {!confirming ? (
+          <>
+            <p className="text-sm text-muted-foreground">
+              Süreli lisansın bitiş tarihi ({formatDate(license.expires_at)}) kaldırılır ve lisans ömür boyu olur.
+            </p>
+            <Button variant="outline" disabled={busy} onClick={() => setConfirming(true)}>
+              <InfinityIcon /> Ömür boyuna dönüştür
+            </Button>
+          </>
+        ) : (
+          <div role="alertdialog" aria-label="Ömür boyu dönüşüm onayı" className="space-y-3 rounded-lg border border-primary/40 p-3">
+            <p className="text-sm font-medium">
+              {license.customer.name} lisansı ömür boyuna dönüştürülecek. Emin misiniz?
+            </p>
+            <ul className="list-disc space-y-1 pl-5 text-sm">
+              <li>Lisans anahtarı aynı kalır: <span className="font-mono">{license.license_key}</span></li>
+              <li>Bağlı cihazlar ({deviceCount}/{license.device_limit}) ve cihaz limiti korunur.</li>
+              <li>Paket ({license.package?.name ?? "paket yok"}) ve {moduleCount} modül (ek modüller dahil) korunur.</li>
+              <li>Offline çalışma politikası ({offlinePolicyLabel(license.offline_grace_days)}) değişmez; ömür boyu sınırsız offline değildir.</li>
+              <li>
+                <b>Geri alınamaz:</b> lisans tekrar süreliye çevrilemez ve süre uzatma kalkar. Bakım/güncelleme hakkı ayrıdır.
+              </li>
+            </ul>
+            <PerpetualRolloutNote />
+            <div className="flex flex-wrap gap-2">
+              <Button disabled={busy} onClick={convert}>
+                <InfinityIcon /> {busy ? "Dönüştürülüyor…" : "Evet, ömür boyuna dönüştür"}
+              </Button>
+              <Button variant="outline" disabled={busy} onClick={() => setConfirming(false)}>
+                Vazgeç
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function ExtendCard({ license, onDone }: { license: License; onDone: (l: License) => void }) {
   const [date, setDate] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -621,7 +729,7 @@ function ExtendCard({ license, onDone }: { license: License; onDone: (l: License
         <form onSubmit={submit} className="space-y-3">
           {error && <Alert>{error}</Alert>}
           <Field label="Yeni bitiş tarihi" hint={`Şu anki: ${formatDate(license.expires_at)}`}>
-            <Input type="date" min={license.expires_at} value={date} onChange={(e) => setDate(e.target.value)} />
+            <Input type="date" min={license.expires_at ?? undefined} value={date} onChange={(e) => setDate(e.target.value)} />
           </Field>
           <Button type="submit" variant="outline" disabled={busy || !date}>
             <CalendarPlus /> Süreyi uzat

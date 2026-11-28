@@ -16,6 +16,7 @@ export const ACTION_LABEL: Record<string, string> = {
   "auth.login_failed": "Başarısız giriş",
   "license.create": "Lisans verdi",
   "license.extend": "Süre uzattı",
+  "license.convert_perpetual": "Ömür boyuna dönüştürdü",
   "license.revoke": "Lisans iptal etti",
   "license.demo_register": "PanoPOS demo kuruldu",
   "license.approve_demo": "Demoyu onayladı",
@@ -61,14 +62,20 @@ export function isWarning(action: string): boolean {
   return action === "auth.login_failed" || action === "license.revoke";
 }
 
+/** Oluşturma/onay kaydında süre: ömür boyu veya bitiş tarihi (eski kayıtlarda tür yoktur). */
+function termText(d: Record<string, unknown>): string | null {
+  if (d.license_type === "perpetual") return "ömür boyu";
+  return d.expires_at ? `bitiş ${formatDate(String(d.expires_at))}` : null;
+}
+
 /** Kayıt verisinden kısa, okunur özet (gizli değer zaten saklanmaz). */
 export function describe(entry: AuditEntry): string {
   const d = entry.data ?? {};
   switch (entry.action) {
     case "license.create":
-      return [d.customer, d.device_limit ? `${d.device_limit} cihaz` : null, d.expires_at ? `bitiş ${formatDate(String(d.expires_at))}` : null]
-        .filter(Boolean)
-        .join(" · ");
+      return [d.customer, d.device_limit ? `${d.device_limit} cihaz` : null, termText(d)].filter(Boolean).join(" · ");
+    case "license.convert_perpetual":
+      return `süreli${d.previous_expires_at ? ` (bitiş ${formatDate(String(d.previous_expires_at))})` : ""} → ömür boyu`;
     case "license.extend":
       return `${formatDate(String(d.from ?? ""))} → ${formatDate(String(d.to ?? ""))}`;
     case "license.revoke":
@@ -78,9 +85,7 @@ export function describe(entry: AuditEntry): string {
         .filter(Boolean)
         .join(" · ");
     case "license.approve_demo":
-      return [d.customer, d.device_limit ? `${d.device_limit} cihaz` : null, d.expires_at ? `bitiş ${formatDate(String(d.expires_at))}` : null]
-        .filter(Boolean)
-        .join(" · ");
+      return [d.customer, d.device_limit ? `${d.device_limit} cihaz` : null, termText(d)].filter(Boolean).join(" · ");
     case "license.device_activate":
       return [d.device, d.device_limit ? `${d.active_devices}/${d.device_limit}` : null].filter(Boolean).join(" · ");
     case "license.device_release":
