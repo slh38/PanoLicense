@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AuditLog;
 use App\Models\License;
+use App\Models\Package;
 use App\Models\Product;
 use App\Models\User;
 use App\Support\LicenseSigner;
@@ -19,7 +20,7 @@ class OfflinePolicyTest extends TestCase
     {
         return array_replace([
             'customer' => ['name' => 'Politika Test Firması'],
-            'product_id' => Product::first()->id, 'package_id' => \App\Models\Package::where('code', 'PRO')->value('id'), 'device_limit' => 2,
+            'product_id' => Product::first()->id, 'package_id' => Package::where('code', 'PRO')->value('id'), 'device_limit' => 2,
             'starts_at' => '2026-11-27', 'expires_at' => '2030-11-27',
         ], $overrides);
     }
@@ -29,6 +30,7 @@ class OfflinePolicyTest extends TestCase
         $response = $this->actingAs(User::factory()->admin()->create())
             ->postJson('/api/v1/licenses', $this->payload(['offline_grace_days' => $days]))
             ->assertCreated()->assertJsonPath('data.offline_grace_days', $days);
+
         return License::findOrFail($response->json('data.id'));
     }
 
@@ -39,6 +41,7 @@ class OfflinePolicyTest extends TestCase
         $this->assertSame(1, openssl_verify($bytes,
             base64_decode(strtr($envelope['sig'], '-_', '+/')),
             LicenseSigner::fromConfig()->publicKeyPem(), OPENSSL_ALGO_SHA256));
+
         return json_decode($bytes, true, 512, JSON_THROW_ON_ERROR);
     }
 
@@ -121,18 +124,18 @@ class OfflinePolicyTest extends TestCase
                 ->assertCreated()->assertJsonPath('offline_grace_days', 365)->json();
             $document = $this->document($response);
             $this->assertSame(365, $document['offline_grace_days']);
-            $this->assertSame('2027-11-27T10:00:00Z', $document['valid_until']);
+            $this->assertSame('2027-11-27T10:00:00.000001Z', $document['valid_until']);
             $this->assertNotEmpty($document['device_key_hash']);
         }
         Carbon::setTestNow('2026-12-01 10:00:00');
         $renewed = $this->document($this->clientPost('/api/v1/client/check', $this->activateBody($license))->assertOk()->json());
-        $this->assertSame('2027-12-01T10:00:00Z', $renewed['valid_until']);
+        $this->assertSame('2027-12-01T10:00:00.000001Z', $renewed['valid_until']);
         $this->postJson("/api/v1/licenses/{$license->id}/offline-policy", ['offline_grace_days' => 7])->assertOk();
         $standard = $this->document($this->clientPost('/api/v1/client/check', $this->activateBody($license))->assertOk()->json());
         $this->assertSame(7, $standard['offline_grace_days']);
-        $this->assertSame('2026-12-08T10:00:00Z', $standard['valid_until']);
+        $this->assertSame('2026-12-08T10:00:00.000001Z', $standard['valid_until']);
         // Önceden verilen belgenin bitişi uzaktan değişmez.
-        $this->assertSame('2027-12-01T10:00:00Z', $renewed['valid_until']);
+        $this->assertSame('2027-12-01T10:00:00.000001Z', $renewed['valid_until']);
     }
 
     public function test_neither_policy_exceeds_license_end_including_last_day(): void
@@ -142,7 +145,7 @@ class OfflinePolicyTest extends TestCase
             $license = $this->createLicense($days);
             $license->update(['expires_at' => '2026-11-27']);
             $document = $this->document($this->clientPost('/api/v1/client/activate', $this->activateBody($license))->assertCreated()->json());
-            $this->assertSame('2026-11-28T00:00:00Z', $document['valid_until']);
+            $this->assertSame('2026-11-28T00:00:00.000000Z', $document['valid_until']);
         }
     }
 

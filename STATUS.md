@@ -3,15 +3,15 @@
 ## Güncel lisans kapsamı — FAZ 6.2a (2026-11-28)
 - Son onaylı Backend commit: 8b0b5cd9344d900e0ff39c7af1ef58cf3ee1a2a7 (commit/push tamamlandı).
 - Ürün müşteriye çıkmadı; gerçek müşteri lisansı yok, tüm kayıtlar TEST. Kayıt/anahtar/audit silinmeyecek.
-- Ortak sözleşme v2.3 §12 iki repoda eşitlendi. Tek v2 ve Client 1.1.0 **onaylandı, henüz kodlanmadı**.
-- Gerçek kod: süreli/demo v1, perpetual v2; Admin-only oluşturma/tek yönlü dönüşüm ve nullable migration hazır.
+- Ortak sözleşme v2.3 §12 iki repoda eşittir ve bu tur değiştirilmedi. Tek v2 Backend yerelde uygulandı; Client 1.1.0 henüz geliştirilmedi.
+- Gerçek yerel kod: süreli/demo/perpetual tek v2, zorunlu license_type ve kesirli zaman; aktif v1 üretimi yok. Admin-only dönüşüm ve mevcut nullable migration korundu.
   Önceki 76 hedefli test bu Backend commit'ine aittir; tek v2/1.1.0 kabulü değildir.
 - Client halen 1.0.1; v2 desteklemez. 1.1.0 paket, panel ve PanoPOS entegrasyonu bekliyor.
   Mevcut iki bayrak varsayılan kapalı kalır; koordineli dağıtım/kabul sonrası kaldırılması planlıdır.
 - Aşağıdaki eski faz/yayın notları tarihçedir; bu görevin güncel canlı doğrulaması değildir.
-  Bu tur yalnız MD güncellendi; kodlama, test/build, DB/canlı işlem veya yeni commit/push yapılmadı.
+  Önceki MD turu b2f70c1 ile kapandı. Bu tur FAZ 6.2a.2b Backend + hedefli testler; yalnız kullanıcı ek onayıyla izole test DB migration'ı yapıldı, canlı işlem/commit/push yok.
 
-Son güncelleme: 2026-11-28 · Faz: **FAZ 6.2a — tek v2 kararı onaylı; uygulama bekliyor.** FAZ 6.2a.2 Backend commit/push tamamlandı. Ortak sözleşme: [LICENSING_CONTRACT](docs/LICENSING_CONTRACT.md) v2.3; güncel karar ve gerçek uygulama ayrımı yukarıdadır.
+Son güncelleme: 2026-11-28 · Faz: **FAZ 6.2a.2b — tek v2 Backend yerelde tamamlandı; Client/entegrasyon bekliyor.** FAZ 6.2a.2 Backend commit/push tamamlandı. Ortak sözleşme: [LICENSING_CONTRACT](docs/LICENSING_CONTRACT.md) v2.3; güncel karar ve gerçek uygulama ayrımı yukarıdadır.
 
 ## Karar geçmişi
 - 2026-11-22: İlk iskelet ASP.NET Core + SQL Server + IIS idi → **Laravel 13 (PHP 8.3+) + MySQL 8**'e geçildi. Sunucu tarafında .NET yok.
@@ -86,3 +86,17 @@ Son güncelleme: 2026-11-28 · Faz: **FAZ 6.2a — tek v2 kararı onaylı; uygul
   Tam regresyon, panel/Client build veya NuGet üretimi yapılmadı.
 - Tarihsel FAZ 6.2a.2 kapanışında sözleşme v2.2/v2.1 ayrışmıştı; bu MD turunda iki kopya v2.3 olarak eşitlendi.
   Panel, Client ve PanoPOS entegrasyonu bekliyor. Backend kapanışı ve commit/push kullanıcı tarafından onaylandı; canlı yayın yok.
+
+## FAZ 6.2a.2b — Tek v2 Backend (tamamlandı ve onaylandı; canlı yayın yok)
+
+- LicenseSigner yalnız v2 üretir; term/demo/perpetual türü imzalıdır, hatalı tür/tarih ve tüm v1 imzalama
+  istekleri reddedilir. UTC mikrosaniye ve önceki v2 +1 mikrosaniye kuralı korunur.
+- Süreli/demo min(offline sonu, bitişi izleyen UTC 00:00); perpetual issued_at + 7/365 gün.
+- Mevcut iki kapalı bayrak artık tüm v2 üretimini kapatır. Production ikinci açık onay gerektirir.
+  Client challenge/demo/activate/check 503 signing_unavailable ile kayıt bırakmadan kapanır; v1 fallback yok.
+  Gerçek env veya bayrak varsayılanları değiştirilmedi. Yalnız test uygulaması pozitif senaryolarda izin verir.
+- 56 hedefli PHPUnit PASS (556 assertion); yalnız korumalı panolicense_test MySQL.
+  Başlangıçta eksik şema görüldü; kullanıcı ek onayından sonra yalnız izole test DB'de mevcut migration'lar uygulandı.
+  Yeni migration yok. Canlı/dev DB, gerçek TEST lisansları, audit veya anahtar temizliği yapılmadı.
+- Client 1.1.0 ve geçmiş v1 iptal okuyucusu sonraki görevdir. Bu Backend mevcut iptal kayıtlarını okumaz/silmez;
+  yeni iptal yanıtı da v2'dir. PanoPOS ve panel değişmedi. Koordineli kabul/dağıtım henüz yapılmadı.

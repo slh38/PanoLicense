@@ -1,7 +1,7 @@
 # Mimari
 
 **FAZ 6.2a güncel hedef:** ortak sözleşme v2.3 §12'deki tek v2 / Client 1.1.0 kararı onaylıdır,
-henüz kodlanmadı. Aşağıdaki v1 ve F3/F4 kayıtları mevcut/tarihsel uygulamayı anlatır; çift sürüm
+Backend tek v2 üretimi FAZ 6.2a.2b ile yerelde uygulandı; Client/tüketici entegrasyonu bekliyor. Aşağıdaki v1 ve F3/F4 kayıtları tarihsel uygulamayı anlatır; çift sürüm
 ticari destek için yeni talimat değildir. Sadece geçmiş iptalleri doğrulayan dar v1 okuması korunacak.
 İmza, cihaz anahtarı, audit, güvenilir saat ve eski belge koruması korunacak; yeni tablo/ gereksiz
 migration yoktur. TEST kayıtları silinmez. Geçici bayraklar koordineli dağıtım/kabul sonrası kaldırılacak.
@@ -299,3 +299,12 @@ mevcut v1/v2 üretimi ve dağıtım kilidi CLIENT_API'dedir; hedef tek v2 sözle
 §6'daki online kontrol okumasına ek olarak yanıt snapshot/imzası kısa lisans satır kilidi içinde alınır;
 dönüşümle belge sıralamasını korur. Satış akışına sorgu/yazım eklenmedi. Yeni servis/bağımlılık yoktur.
 Yeni Client ve PanoPOS tüketicileri bu fazda uygulanmadı; özellik varsayılan kapalıdır.
+
+## FAZ 6.2a.2b — tek v2 üretim
+LicenseSigner.VERSION=2; her belgede açık license_type, zorunlu term tarihi / açık perpetual null.
+v1 üretim dalı kaldırıldı. İmza algoritması, anahtarlar, online satır kilidi ve cihaz sahiplik kanıtı aynı.
+Kesirli UTC zamanlar korunur; offline minimum hesabı term/demo için, sonlu 7/365 perpetual için uygulanır.
+fromConfig/doğrudan sign/document yollarındaki mevcut dağıtım kapısı v2'yi kapalı tutar.
+Böylece client işlemleri kayıt oluşturulmadan 503 ile kapanır. Bayrak varsayılanları değiştirilmedi.
+Mevcut nullable migration yeterlidir; yeni şema yok. Bu tur migration yalnız kullanıcı ek onayıyla
+mevcut izole panolicense_test şemasına uygulandı; canlı/dev DB'ye uygulanmadı.

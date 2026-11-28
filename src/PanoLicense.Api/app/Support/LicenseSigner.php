@@ -9,7 +9,7 @@ use RuntimeException;
 /**
  * İmzalı lisans belgesi üretir (ECDSA P-256 / SHA-256, "ES256").
  *
- * Zarf: {"v":1,"kid":"k1","alg":"ES256","payload":"<base64url JSON>","sig":"<base64url DER imza>"}
+ * Zarf: {"v":2,"kid":"k1","alg":"ES256","payload":"<base64url JSON>","sig":"<base64url DER imza>"}
  * İmza, payload'un çözülmüş ham baytları üzerindedir; istemci önce imzayı doğrular, sonra JSON'u okur.
  * Böylece JSON sıralama/biçim farkları imzayı bozmaz.
  *
@@ -20,7 +20,7 @@ class LicenseSigner
 {
     public const ALG = 'ES256';
 
-    public const VERSION = 1;
+    public const VERSION = 2;
 
     private \OpenSSLAsymmetricKey $key;
 
@@ -38,6 +38,7 @@ class LicenseSigner
     /** config/panolicense.php → signing.key_path, signing.key_id */
     public static function fromConfig(): self
     {
+        self::ensureDistributionEnabled();
         $path = config('panolicense.signing.key_path');
         if (! $path || ! is_readable($path)) {
             throw new SigningUnavailableException('İmza anahtarı yapılandırılmamış (LICENSE_SIGNING_KEY_PATH).');
@@ -55,17 +56,9 @@ class LicenseSigner
         if (! $license->hasValidTerm()) {
             throw new SigningUnavailableException('Geçersiz lisans türü/bitiş tarihi.');
         }
-        if ($license->isPerpetual() && ! PerpetualLicenses::enabled()) {
-            throw new SigningUnavailableException('v2 lisans dağıtımı kapalı.');
-        }
-        $version = $license->isPerpetual() ? 2 : self::VERSION;
-        // v2 mikrosaniye taşır: aynı saniyedeki son v1 belgesinden sonra sıralanır.
-        $issuedAt = now()->utc();
-        if ($version === 1) {
-            $issuedAt->startOfSecond();
-        } else {
-            $issuedAt->addMicrosecond();
-        }
+        self::ensureDistributionEnabled();
+        // Kesirli hassasiyet ve önceki v2 zamanlama kuralı korunur.
+        $issuedAt = now()->utc()->addMicrosecond();
         $graceEnd = $issuedAt->copy()->addDays($license->offlineGraceDays());
         // Lisans, bitiş gününün sonuna kadar geçerlidir (sunucu saat dilimi UTC).
         $licenseEnd = $license->expires_at?->copy()->utc()->addDay()->startOfDay();
@@ -77,8 +70,8 @@ class LicenseSigner
         $validUntil = $licenseEnd === null || $graceEnd->lt($licenseEnd) ? $graceEnd : $licenseEnd;
 
         return $this->sign([
-            'v' => $version,
-            ...($version === 2 ? ['license_type' => 'perpetual'] : []),
+            'v' => self::VERSION,
+            'license_type' => $license->license_type,
             'license_key' => $license->license_key,
             'product' => $license->product->code,
             'customer' => $license->customer->name,
@@ -93,8 +86,8 @@ class LicenseSigner
             'device_key_hash' => $device->public_key_hash,
             'device_status' => $device->status,
             'expires_at' => $license->expires_at?->toDateString(),
-            'issued_at' => $version === 2 ? $issuedAt->format('Y-m-d\TH:i:s.u\Z') : $issuedAt->toIso8601ZuluString(),
-            'valid_until' => $version === 2 ? $validUntil->format('Y-m-d\TH:i:s.u\Z') : $validUntil->toIso8601ZuluString(),
+            'issued_at' => $issuedAt->format('Y-m-d\TH:i:s.u\Z'),
+            'valid_until' => $validUntil->format('Y-m-d\TH:i:s.u\Z'),
         ]);
     }
 
@@ -106,17 +99,14 @@ class LicenseSigner
         $validDate = is_string($expiry) && preg_match('/^\d{4}-\d{2}-\d{2}$/D', $expiry)
             && ($date = \DateTimeImmutable::createFromFormat('!Y-m-d', $expiry))
             && $date->format('Y-m-d') === $expiry;
-        if (($version === 1 && ($type !== null || ! $validDate))
-            || ($version === 2 && (! array_key_exists('expires_at', $payload)
-                || ! in_array($type, ['term', 'perpetual'], true)
-                || ($type === 'term' ? ! $validDate : $expiry !== null)
-                || ($type === 'perpetual' && ($payload['status'] ?? null) === 'demo')))
-            || ! in_array($version, [1, 2], true)) {
+        if ($version !== self::VERSION
+            || ! array_key_exists('expires_at', $payload)
+            || ! in_array($type, ['term', 'perpetual'], true)
+            || ($type === 'term' ? ! $validDate : $expiry !== null)
+            || ($type === 'perpetual' && ($payload['status'] ?? null) === 'demo')) {
             throw new SigningUnavailableException('Geçersiz belge türü/bitiş tarihi.');
         }
-        if ($version === 2 && ! PerpetualLicenses::enabled()) {
-            throw new SigningUnavailableException('v2 lisans dağıtımı kapalı.');
-        }
+        self::ensureDistributionEnabled();
         $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
 
         if (! openssl_sign($json, $signature, $this->key, OPENSSL_ALGO_SHA256)) {
@@ -130,6 +120,14 @@ class LicenseSigner
             'payload' => self::base64url($json),
             'sig' => self::base64url($signature),
         ];
+    }
+
+    /** Mevcut iki geçici bayrak tüm v2 üretimini kapatır; istemci kabulünden önce açılmaz. */
+    private static function ensureDistributionEnabled(): void
+    {
+        if (! PerpetualLicenses::enabled()) {
+            throw new SigningUnavailableException('v2 lisans dağıtımı kapalı.');
+        }
     }
 
     public function publicKeyPem(): string

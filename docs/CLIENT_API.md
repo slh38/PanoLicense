@@ -3,8 +3,8 @@
 ## Güncel hedef ile mevcut uygulama ayrımı — FAZ 6.2a
 
 Ana sözleşme [v2.3 §12](LICENSING_CONTRACT.md) iki repoda aynıdır.
-**Onaylı hedef (henüz uygulanmadı):** süreli/demo/ömür boyu tek v2; zorunlu imzalı license_type;
-term için geçerli expires_at, perpetual için açık null. Aktif v1 üretimi/kabulü kaldırılacak,
+**Backend yerelde uygulandı (FAZ 6.2a.2b); tüketiciler bekliyor:** süreli/demo/ömür boyu tek v2; zorunlu imzalı license_type;
+term için geçerli expires_at, perpetual için açık null. Aktif v1 üretimi kaldırıldı; tüketicide ticari kabul kaldırılacak,
 yalnız geçmiş iptal kayıtları dar v1 okuyucusuyla doğrulanacak; ticari/modül/rapor yetkisi vermeyecek.
 Client 1.1.0 hedeflenir; Device Service ve WebApi aynı sürümü kullanacak. Null tek başına süresiz demek değildir.
 
@@ -13,8 +13,8 @@ Demo 14 günlük Pro/tek cihaz/7 gün kalır. İmza, challenge, cihaz bağı, sa
 Yeni Client'ta genel v1/v2 ticari uyumluluk talimatı geçersizdir.
 HTTP /api/v1 ve kanıt amaç metinlerindeki v1 belge sürümünden bağımsızdır; bu kararla değiştirilmez.
 
-**Mevcut kod:** 8b0b5cd Backend hâlâ term/demo v1 ve perpetual v2 üretir; resmî Client 1.0.1 v2 desteklemez.
-Aşağıdaki eski v1/1.0.1 açıklamaları bu uygulanmış sürümü tarif eder; hedef üretim/kabul talimatı değildir.
+**Mevcut yerel Backend:** tüm lisans/iptal belgeleri tek v2; resmî Client 1.0.1 v2 desteklemez.
+8b0b5cd'nin eski v1/v2 üretimi alttaki tarihsel bölümde korunur; güncel talimat değildir.
 Yeni Client 1.1.0, koordineli tüketici dağıtımı ve kabul bekliyor. İki geçici bayrak şimdilik kapalıdır,
 koordineli dağıtım ve kabul sonrasında kaldırılacaktır. TEST kayıtları ve kalıcı güvenlik geçmişi silinmez.
 
@@ -78,10 +78,10 @@ Başarılı demo/activate/check yanıtları; license_key, state, status, expires
 device_status, customer_name, offline_grace_days, server_time, license_document taşır.
 Offline izin yalnız doğrulanmış belgeye göre verilir; diğer alanlar bilgi amaçlıdır.
 
-Zarf alanları: v=1, kid, alg=ES256, payload (base64url), sig (base64url DER).
+Zarf alanları: v=2, kid, alg=ES256, payload (base64url), sig (base64url DER).
 Mevcut sözleşme korunur: ECDSA P-256/SHA-256, payload'un çözülmüş ham baytları, DER imza;
 bu özel zarf JWS değildir. İstemci gömülü açık anahtarı kid ile seçer.
-Payload: v, license_key, product, customer, status, state, device_limit, fingerprint,
+Payload: v, **license_type (term|perpetual)**, license_key, product, customer, status, state, device_limit, fingerprint,
 **device_key_hash**, device_status, expires_at, issued_at, valid_until, **offline_grace_days** (7 veya 365).
 
 LicenseDocumentVerifier.Verify ve OfflineLicenseEvaluator.Evaluate için LicenseIdentity zorunludur:
@@ -89,7 +89,7 @@ beklenen ürün, lisans anahtarı, fingerprint ve **yerel cihaz anahtarından he
 Bağlam belge içinden kopyalanmaz. Farklı ürün/lisans/cihaz/anahtar veya eski eksik anahtar bağı reddedilir.
 İmza doğrulanmadan belge değerlendirilmez. Client açılışta CNG anahtarını açar; diskteki özete tek başına güvenmez.
 
-valid_until = min(issued_at + lisansın offline_grace_days değeri, lisans bitişini izleyen 00:00 UTC).
+term/demo için valid_until = min(issued_at + lisansın offline_grace_days değeri, lisans bitişini izleyen 00:00 UTC); perpetual için valid_until = issued_at + offline_grace_days.
 Politika lisans bazındadır; tüm cihazlara aynı 7/365 değeri uygulanır. Demo için daima 7'dir.
 İlk aktivasyon ve izin yenilemesi online challenge + sahiplik kanıtıyla yapılır. Yerel saat/ayar/yeniden
 başlatma süreyi yenileyemez. Client OfflineGraceDays alanını okur (eski imzalı belgede yoksa 7);
@@ -210,7 +210,7 @@ PanoLicense sunucusuna yeni uç eklenmedi; bu bölüm Client'ın ürün içi (ö
 - **İptal iletimi:** `GetSignedRevocationDocument()` (cihaz) → `ReadRevocation(zarf)` (sunucu). İmzalı iptal kanıt gerektirmez,
   yalnız kısıtlar; iptal belgesi `Verify` ile ticari kanıt olarak kabul edilmez.
 
-## Mevcut Backend / tarihsel v1-v2 uygulaması (FAZ 6.2a.2)
+## Tarihsel Backend / v1-v2 uygulaması (FAZ 6.2a.2; 6.2a.2b ile üretim değişti)
 
 Bu bölüm 8b0b5cd kodunu tarif eder. Önceki v2.2 kararı tarihçedir; güncel hedef v2.3 §12'dir.
 
@@ -250,3 +250,20 @@ Bu bölüm 8b0b5cd kodunu tarif eder. Önceki v2.2 kararı tarihçedir; güncel 
 - Ayrı yayın onayından önce: Client 1.1.0 tek v2, aktif v1 reddi, geçmiş v1 iptal okuması ve antirollback/iptal kabulü; tüm Device Service ve WebApi
   tüketicilerinin yeni Client'a geçişi; panel/Desktop null-tür ayrımı; izole migration kabulü tamamlanmalıdır.
   Bayrak kapatılması önceden verilmiş offline belgeyi geriye dönük iptal etmez.
+
+## FAZ 6.2a.2b — güncel tek v2 üretim ve kapalı dağıtım
+
+- Süreli/demo/perpetual ve yeni iptal yanıtları v2'dir. license_type zorunlu; term geçerli YYYY-MM-DD
+  bitiş gerektirir, perpetual açık expires_at:null gerektirir; demo perpetual olamaz. Signer v1 kabul etmez.
+- issued_at ve valid_until UTC ISO 8601 altı basamak kesirle yazılır; üretim zamanı için önceki +1 mikrosaniye
+  kuralı sürer. Term/demo offline sınırı lisans bitişini aşmaz; perpetual yalnız 7/365 gün alır.
+- Geçici LICENSE_PERPETUAL_ENABLED=false iken tüm client challenge/demo/activate/check 503
+  signing_unavailable döner; anahtar yükleme ve işleme/kayıt öncesinde kapı kapanır. V1 fallback yoktur.
+  Production'da enabled=true tek başına yetmez; LICENSE_PERPETUAL_PRODUCTION_APPROVED=true da gerekir.
+  İki gerçek varsayılan kapalıdır ve bu görevde açılmadı; kabul sonrası kaldırılması ayrı adımdır.
+- Admin oluşturma/onay/dönüşüm yetkileri değişmedi. Kapalı özellikte perpetual oluşturma/dönüşüm yine 422'dir.
+  Yönetimde süreli lisans kaydı oluşturulabilir; kapalı dağıtım cihaz belgesi üretmez.
+- Kaydedilmiş eski iptal/cihaz/audit ve zaman durumu değiştirilmedi. Dar v1 geçmiş iptal okuyucusu
+  Client 1.1.0 görevidir; bu sunucuda aktif v1 üretimini tutmak için gerekçe değildir.
+- Ortak v2.3 sözleşmesi değiştirilmedi; §12 gerçek durumundaki commit numaraları tarihli snapshot'tır.
+  Bu yerel Backend ilerlemesi STATUS'tadır. Client/panel/PanoPOS entegrasyonu tamamlanmadı; canlı dağıtım kapalı.

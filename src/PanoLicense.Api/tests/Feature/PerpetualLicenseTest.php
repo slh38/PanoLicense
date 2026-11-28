@@ -135,7 +135,7 @@ class PerpetualLicenseTest extends TestCase
         $this->postJson("/api/v1/licenses/{$term->id}/convert-perpetual", ['license_type' => 'perpetual'])->assertUnprocessable();
     }
 
-    public function test_perpetual_offline_is_finite_for_both_policies_and_v1_stays_unchanged(): void
+    public function test_perpetual_offline_is_finite_for_both_policies_and_term_uses_v2(): void
     {
         foreach ([7, 365] as $days) {
             $license = $this->createLicense('perpetual');
@@ -150,8 +150,8 @@ class PerpetualLicenseTest extends TestCase
         $term = $this->createLicense();
         $doc = $this->clientPost('/api/v1/client/activate', $this->deviceBody($term))->assertCreated()->json('license_document');
         $payload = $this->decode($doc);
-        $this->assertSame(1, $doc['v']);
-        $this->assertArrayNotHasKey('license_type', $payload);
+        $this->assertSame(2, $doc['v']);
+        $this->assertSame('term', $payload['license_type']);
         $this->assertSame('2027-11-28', $payload['expires_at']);
     }
 
@@ -210,12 +210,14 @@ class PerpetualLicenseTest extends TestCase
             ->assertOk()->assertJsonPath('data.license_key', $license->license_key)->assertJsonPath('data.license_type', 'perpetual');
     }
 
-    public function test_signer_rejects_invalid_v2_and_missing_or_null_v1_dates(): void
+    public function test_signer_rejects_invalid_v2_and_all_v1_payloads(): void
     {
         $signer = LicenseSigner::fromConfig();
         foreach ([
             ['v' => 1, 'expires_at' => null],
             ['v' => 1],
+            ['v' => 1, 'expires_at' => '2027-11-28'],
+            ['v' => 1, 'license_type' => 'term', 'expires_at' => '2027-11-28'],
             ['v' => 2, 'expires_at' => null],
             ['v' => 2, 'license_type' => 'unknown', 'expires_at' => null],
             ['v' => 2, 'license_type' => 'perpetual'],
@@ -239,6 +241,7 @@ class PerpetualLicenseTest extends TestCase
         $license = $this->createLicense();
         $oldDoc = $this->clientPost('/api/v1/client/activate', $this->deviceBody($license))->assertCreated()->json('license_document');
         $old = $this->decode($oldDoc);
+        Carbon::setTestNow(now()->addMicroseconds(2));
         $stale = $license->fresh();
         $device = $stale->devices()->firstOrFail();
         $this->postJson("/api/v1/licenses/{$license->id}/convert-perpetual", ['license_type' => 'perpetual'])->assertOk();
@@ -251,8 +254,9 @@ class PerpetualLicenseTest extends TestCase
         $this->assertSame('perpetual', $response['license_type']);
         $this->assertSame(2, $new['v']);
         $this->assertTrue(Carbon::parse($new['issued_at'])->gt(Carbon::parse($old['issued_at'])));
+        $check = $this->proofBody('check', $this->deviceBody($license));
         config(['panolicense.perpetual_enabled' => false]);
-        $this->clientPost('/api/v1/client/check', $this->deviceBody($license))
+        $this->postJson('/api/v1/client/check', $check)
             ->assertStatus(503)->assertJsonPath('error', 'signing_unavailable');
     }
 

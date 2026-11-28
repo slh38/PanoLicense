@@ -136,3 +136,15 @@ HTTP 403 testleri PHPUnit'te kapsanıyor.
   Canlı/dev DB migration yok. Tam regresyon ve panel/Client build yok.
 - Yeni Client'ta v1/v2 doğrulama, eski belge reddi ve kalıcı iptal kabulü sonraki aşamanın şartıdır;
   Backend testi Client 1.0.1'e v2 desteği kazandırmaz.
+
+## FAZ 6.2a.2b — tek v2 Backend hedefli kabul
+- Filtre: LicenseDocumentTest|OfflinePolicyTest|PerpetualLicenseTest|AuthorizationTest|
+  DeviceProofTest|ClientActivationTest|ClientDemoTest. 56/56 PASS, 556 assertion.
+- Süreli/demo/perpetual v2 ve açık tür; v1 üretim reddi, hatalı tür/tarih, 7/365 offline minimumu,
+  gerçek ES256 imzası, mikrosaniye ve artan zaman, Admin/tek yönlü dönüşüm, iptal ve cihaz kanıtı kapsanır.
+- İki bayrak kapalı / production ikinci onayı eksik: tüm client uçları 503; lisans/cihaz/challenge/audit
+  yan etkisi yok. Yalnız pozitif test uygulaması bayrağı config üzerinden açar; gerçek env kapalıdır.
+- Başlangıçta izole şema eskiydi. Kullanıcının ek açık onayıyla yalnız 127.0.0.1/panolicense_test üzerinde
+  mevcut migration'lar test fixture'ıyla uygulandı. Yeni migration, canlı/dev DB işlemi yok.
+- Client 1.1.0 ve dar v1 iptal okuyucusu çalışılmadı; geçmiş 76 test önceki fazın kaydıdır.
+  Tam regresyon, .NET/panel build ve paket üretimi yapılmadı.

@@ -2,7 +2,7 @@
 
 **Güncel lisans karar kaynağı:** [Ortak sözleşme v2.3 §12](LICENSING_CONTRACT.md).
 Ürün müşteriye çıkmadı; tüm lisanslar TEST ve korunacaktır. Süreli/demo/ömür boyu için tek v2,
-hedef Client 1.1.0 ve yalnız geçmiş iptal kayıtları için dar v1 okuması onaylandı; henüz uygulanmadı.
+Backend tek v2 üretimi FAZ 6.2a.2b ile yerelde uygulandı; Client 1.1.0 ve yalnız geçmiş iptal kayıtları için dar v1 okuması henüz uygulanmadı.
 Aktif v1 ticari desteği ve genel çift sürüm uyumluluğu önceki karardır, yeni geliştirme talimatı değildir.
 Admin-only ömür boyu oluşturma/dönüşüm, yalnız süreli → ömür boyu, bağımsız bakım hakkı (FAZ 7),
 offline/cihaz/imza/iptal/eski belge koruması aynen geçerlidir. Geçici bayraklar kabul sonrası kaldırılacak;
@@ -158,3 +158,9 @@ _İlk kayıt 2026-11-22; Laravel geçişinde (2026-11-22) yeniden teyit edildi._
 - Bakım ve güncelleme hakkı ayrı olup FAZ 7'ye bırakıldı.
 - Mevcut Backend dağıtım kilidi ve tarihsel v1/v2 uygulaması CLIENT_API'dedir; güncel hedef ortak sözleşme v2.3 §12'dir.
   Panel ve yeni Client henüz bu fazda geliştirilmedi; canlıda açılmamalıdır.
+
+### FAZ 6.2a.2b uygulama notu
+Sunucu artık bütün kullanım ve yeni iptal belgelerini v2 üretir; tür/tarih koşulları zorunludur.
+Aktif v1 üretimi yoktur. Mevcut iki geçici kapalı bayrak tüm v2 dağıtımını kapatır; production ikinci açık
+onay gerektirir. Önceki FAZ 6.2a.2 v1/v2 metni tarihçedir. ADMIN ve tek yönlü dönüşüm, 7/365/demo,
+imza/cihaz/iptal ve belge sıralaması değişmez. Client 1.1.0 ve koordineli kabul henüz yapılmadı.

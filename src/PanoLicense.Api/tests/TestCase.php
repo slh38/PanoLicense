@@ -2,12 +2,15 @@
 
 namespace Tests;
 
+use App\Models\Product;
 use App\Support\LicenseSigner;
+use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Testing\TestResponse;
 
 abstract class TestCase extends BaseTestCase
 {
-    public function createApplication(): \Illuminate\Foundation\Application
+    public function createApplication(): Application
     {
         $app = parent::createApplication();
         if (! $app->environment('testing') ||
@@ -17,6 +20,7 @@ abstract class TestCase extends BaseTestCase
             config('database.connections.mysql.url')) {
             throw new \RuntimeException('Testler yalnız yerel panolicense_test MySQL veritabanında çalışabilir.');
         }
+
         return $app;
     }
 
@@ -28,8 +32,11 @@ abstract class TestCase extends BaseTestCase
         parent::setUp();
 
         config([
-            'panolicense.signing.key_path' => self::testSigningKeyPath(),
+            'panolicense.signing.key_path' => self::test_signing_key_path(),
             'panolicense.signing.key_id' => 'test',
+            // Yalnız izole test uygulaması; gerçek env ve varsayılan kapalı bayraklar değişmez.
+            'panolicense.perpetual_enabled' => true,
+            'panolicense.perpetual_production_approved' => false,
         ]);
     }
 
@@ -56,25 +63,27 @@ abstract class TestCase extends BaseTestCase
         return $body;
     }
 
-    protected function clientPost(string $uri, array $body): \Illuminate\Testing\TestResponse
+    protected function clientPost(string $uri, array $body): TestResponse
     {
         // Doğrulama hatası testleri gerçek uçta kalsın; geçerli istekler challenge akışını kullanır.
         if (! preg_match('/^[a-f0-9]{64}$/', $body['device']['fingerprint']) ||
-            ! \App\Models\Product::where('code', $body['product_code'])->exists()) {
+            ! Product::where('code', $body['product_code'])->exists()) {
             $body['device']['public_key'] = $this->deviceTestKey('invalid')[1];
             $body['proof'] = ['challenge_id' => str_repeat('0', 64), 'signature' => 'AA=='];
+
             return $this->postJson($uri, $body);
         }
         if (! is_readable(config('panolicense.signing.key_path'))) {
             $body['device']['public_key'] = $this->deviceTestKey('missing')[1];
             $body['proof'] = ['challenge_id' => str_repeat('0', 64), 'signature' => 'AA=='];
+
             return $this->postJson($uri, $body);
         }
 
         return $this->postJson($uri, $this->proofBody(basename($uri), $body));
     }
 
-    protected static function testSigningKeyPath(): string
+    protected static function test_signing_key_path(): string
     {
         if (self::$testKeyPath === null) {
             [$private] = LicenseSigner::generateKeyPair();
