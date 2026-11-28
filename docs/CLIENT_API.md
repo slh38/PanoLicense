@@ -15,7 +15,7 @@ HTTP /api/v1 ve kanıt amaç metinlerindeki v1 belge sürümünden bağımsızd�
 
 **Mevcut yerel Backend:** tüm lisans/iptal belgeleri tek v2; resmî Client 1.0.1 v2 desteklemez.
 8b0b5cd'nin eski v1/v2 üretimi alttaki tarihsel bölümde korunur; güncel talimat değildir.
-Client 1.1.0 kaynak geliştirmesi tamamlandı; resmî paket üretimi, koordineli tüketici dağıtımı ve kabul bekliyor. İki geçici bayrak şimdilik kapalıdır,
+Client 1.1.0 kaynak geliştirmesi tamamlandı; resmî 1.1.0 paket üretildi; koordineli tüketici dağıtımı ve gerçek API/DB E2E kabulü bekliyor. İki geçici bayrak şimdilik kapalıdır,
 koordineli dağıtım ve kabul sonrasında kaldırılacaktır. TEST kayıtları ve kalıcı güvenlik geçmişi silinmez.
 
 Durum: **F3b güvenlik düzeltmesi** — cihaz sahiplik kanıtı + anahtara bağlı imzalı belge.
@@ -268,7 +268,7 @@ Bu bölüm 8b0b5cd kodunu tarif eder. Önceki v2.2 kararı tarihçedir; güncel 
 - Ortak v2.3 sözleşmesi değiştirilmedi; §12 gerçek durumundaki commit numaraları tarihli snapshot'tır.
   Bu yerel Backend ilerlemesi STATUS'tadır. Client/panel/PanoPOS entegrasyonu tamamlanmadı; canlı dağıtım kapalı.
 
-## Client 1.1.0 — FAZ 6.2a.3 kaynak API'si (resmî paket henüz yok)
+## Client 1.1.0 — FAZ 6.2a.3 API'si (resmî paket hazır; tüketici kabulü bekliyor)
 
 - LicenseDocumentVerifier.Verify yalnız zarf/payload v=2 kabul eder; v1 ticari yolda unsupported_version.
   Eksik/bilinmeyen/çelişkili license_type/expires_at invalid_license_term ile reddedilir.

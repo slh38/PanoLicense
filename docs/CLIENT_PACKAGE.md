@@ -1,20 +1,20 @@
 # PanoLicense.Client NuGet Paketi
 
-**FAZ 6.2a.3 kaynak geliştirmesi tamamlandı (kod onayı/paket üretimi bekliyor):** PanoLicense.Client **1.1.0**,
+**FAZ 6.2a.3 tamamlandı ve onaylandı; resmî paket üretildi:** PanoLicense.Client **1.1.0**,
 tek v2 kullanım belgesi; aktif v1 ticari kabulü yok, yalnız geçmiş iptal okumaya dar v1 desteği.
 Device Service ve WebApi aynı sabit sürüme geçecektir. Güncel karar ortak sözleşme v2.3 §12'dir.
 Ürün satışa çıkmadığından ticari geriye uyumluluk zorunlu değildir; 1.1.0 sürüm numarası ürün sahibince
 bu geçiş için açıkça onaylanmıştır. Aşağıdaki 1.0.1 sürümü/hash kaydı mevcut resmî paket tarihçesidir;
-yeni geçişte 1.0.1 kullanma talimatı değildir. 1.1.0 hash/kaynak kaydı paket üretiminden sonra doldurulacak.
+yeni geçişte 1.0.1 kullanma talimatı değildir. 1.1.0 hash/kaynak kaydı aşağıdadır; PanoPOS entegrasyonu ve gerçek API/DB E2E kabulü bekliyor.
 
-Sürüm: **1.0.1** (resmî) · Hedef: `net8.0` (bağımlılık yok) · Uyumluluk: .NET 8 (PanoPOS WebApi) ve .NET 10 (PanoPOS Device Service)
+Sürüm: **1.1.0** (resmî; 1.0.1 arşivi korunur) · Hedef: `net8.0` (bağımlılık yok) · Uyumluluk: .NET 8 (PanoPOS WebApi) ve .NET 10 (PanoPOS Device Service)
 doğrulandı (2026-11-28). Kullanım rehberi PanoPOS tarafında: `PanoPos/docs/LICENSING_INTEGRATION.md` §3.
 
 ## Üretim
 ```
 powershell -ExecutionPolicy Bypass -File tools\pack-client.ps1
 ```
-- Çıktı: `artifacts/nuget/PanoLicense.Client.<sürüm>.nupkg` + `.sha256` (klasör Git'e girmez).
+- Çıktı: `artifacts/nuget/PanoLicense.Client.<sürüm>.nupkg` + `.sha256` (çıktı klasörü varsayılan Git ignore kapsamındadır; bu kapanışın açık onayıyla yalnız resmî 1.1.0 nupkg ve .sha256 arşiv kaydı Git'e alındı).
 - Resmî paket yalnız **commit edilmiş temiz** `src/PanoLicense.Client`'tan üretilir; betik kirli ağaçta durur
   (deneme için `-AllowDirty`, bu paket dağıtılmaz). Nuspec içindeki `repository commit` kaynağı gösterir.
 - Yeniden üretilebilir: `Deterministic` + `ContinuousIntegrationBuild` ve ZIP giriş zamanlarının 1980-01-01 olarak sabitlenmesi; aynı commit'ten aynı SHA-256 üretilir
@@ -51,7 +51,7 @@ powershell -ExecutionPolicy Bypass -File tools\pack-client.ps1
 | 1.0.0 | 2026-11-28 | `2a91b681a6a3b28a32b46e2dccd145b76031366a` | F4 Client + modüller (`HasModule`); ilk paket. 41 389 bayt. SHA-256 `3f7fc9b3db1df9e28a200ba5eea94ad4976f4eecfa77d8046d5ee70770eb2d91` |
 | 1.0.1 | 2026-11-28 | `846a407eb9014e25930d1c29722ffd60f61ccaee` | Ticari yetki kanıtı: `LicenseManager.CreateCommercialProof(challenge)`, `GetSignedRevocationDocument()`; ürün sunucusu için `CommercialProofVerifier` (`Verify`, `ReadRevocation`), `CommercialProofFormat`. Mevcut davranış değişmedi. 45 473 bayt. SHA-256 `5bf8aee31d031aa4dfe9a21b31b2a3e5e3ace88a06544e67a8c3b7e83653d954` |
 
-## 1.1.0 hazırlığı — kaynak hazır, resmî paket yok
+## 1.1.0 kabul ve üretim kaydı — resmî paket hazır
 
 - csproj Version=1.1.0; net8.0 ve ek bağımlılık olmama politikası korundu.
   Kullanım belgesi yalnız v2; dar v1 geçmiş iptal desteği CLIENT_API son bölümde.
@@ -67,9 +67,31 @@ powershell -ExecutionPolicy Bypass -File tools\pack-client.ps1
 - **Kod onayı sonrasındaki kapanış:** kaynak commit/push → temiz Client ağacını doğrulama →
   mevcut tools/pack-client.ps1 (AllowDirty kullanılmadan) → 1.1.0 nupkg + .sha256 →
   nuspec repository commit ve içerik/gizli bilgi kontrolü → mevcut standartla yeniden üretim/hash doğrulama →
-  bu belgeye kaynak commit/boyut/SHA-256 kaydı. Bu görevde paket betiği çalıştırılmadı ve hash uydurulmadı.
+  bu belgeye kaynak commit/boyut/SHA-256 kaydı. Kapanışta bu sıra uygulandı; doğrulanmış paket kaydı aşağıdadır.
 - Device Service ve WebApi aynı sabit [1.1.0] sürümüne koordineli geçecek.
   Gömülü k1 ve fingerprint korunacak. Client/paket/sözleşme sürümü tek başına dağıtım izni değildir;
   Backend'in iki geçici bayrağı kabul tamamlanana kadar kapalı kalır.
 
 Paketleme düzeltmesi (FAZ 6.2a.3): temiz üretimde DLL ve tüm giriş içerikleri aynı olmasına rağmen NuGet ZIP zamanları değişiyordu. Mevcut betik hash hesaplamadan önce yalnız ZIP zamanlarını sabitler; eski 1.0.1 arşivi değiştirilmez.
+
+## Resmî 1.1.0 arşiv kaydı (2026-11-28)
+
+| Alan | Değer |
+|---|---|
+| Sürüm | 1.1.0 |
+| Client kod commit'i | c2257ff34c040c0446b9f84806fe4f5316a8f3fe |
+| Paket kaynak commit'i (nuspec repository commit) | 4e6e04515ede37f3b69ad2b72a047cd83812a75e |
+| Paket | artifacts/nuget/PanoLicense.Client.1.1.0.nupkg |
+| SHA dosyası | artifacts/nuget/PanoLicense.Client.1.1.0.nupkg.sha256 |
+| Boyut | 46 740 bayt |
+| SHA-256 | b381300fa3552109c0b84dcf27f7eef3d29be7864c9e2f4bfd128f71b112e1be |
+
+- Temiz, commit edilmiş Client kaynağından Release üretim; AllowDirty kullanılmadı.
+  Nuspec 1.1.0 ve kaynak commit doğrulandı. İki ayrı temiz CI üretiminde paket baytları/SHA-256 eşit.
+- İlk gerçek temiz üretim kontrolünde yalnız ZIP zamanları değiştiği görüldü; DLL ve tüm giriş
+  içerikleri aynıydı. Mevcut paket betiğinde ZIP zamanları sabitlendi, düzeltme kaynak commit'e alındı.
+  Yukarıdaki hash yalnız bu son, doğrulanmış resmî arşive aittir; ara paketler yayımlanmadı.
+- Paket içerik/gizli bilgi kontrolü geçti; test, fixture, özel anahtar, env ve geçici dosya içermez.
+  net8.0 ve bağımlılıksız paket politikası korunur.
+- 111 başarılı Client testi tekrarlanmadı. Gerçek API/DB E2E ve PanoPOS koordineli kabulü henüz yapılmadı.
+  Backend dağıtım bayrakları kapalıdır; bu paket kaydı canlı dağıtım onayı değildir.
