@@ -17,7 +17,7 @@ powershell -ExecutionPolicy Bypass -File tools\pack-client.ps1
 - Çıktı: `artifacts/nuget/PanoLicense.Client.<sürüm>.nupkg` + `.sha256` (klasör Git'e girmez).
 - Resmî paket yalnız **commit edilmiş temiz** `src/PanoLicense.Client`'tan üretilir; betik kirli ağaçta durur
   (deneme için `-AllowDirty`, bu paket dağıtılmaz). Nuspec içindeki `repository commit` kaynağı gösterir.
-- Yeniden üretilebilir: `Deterministic` + `ContinuousIntegrationBuild`; aynı commit'ten aynı SHA-256 üretilir
+- Yeniden üretilebilir: `Deterministic` + `ContinuousIntegrationBuild` ve ZIP giriş zamanlarının 1980-01-01 olarak sabitlenmesi; aynı commit'ten aynı SHA-256 üretilir
   (deneme: art arda iki paketleme aynı hash).
 - Betik paket içeriğini denetler: yalnız `lib/net8.0/PanoLicense.Client.dll`, `README.md`, nuspec ve NuGet meta dosyaları;
   `PRIVATE KEY`, `DEV_TEST_`, `DB_PASSWORD`, `APP_KEY=` izi varsa durur. DLL'de yerel yol ve PEM yoktur.
@@ -71,3 +71,5 @@ powershell -ExecutionPolicy Bypass -File tools\pack-client.ps1
 - Device Service ve WebApi aynı sabit [1.1.0] sürümüne koordineli geçecek.
   Gömülü k1 ve fingerprint korunacak. Client/paket/sözleşme sürümü tek başına dağıtım izni değildir;
   Backend'in iki geçici bayrağı kabul tamamlanana kadar kapalı kalır.
+
+Paketleme düzeltmesi (FAZ 6.2a.3): temiz üretimde DLL ve tüm giriş içerikleri aynı olmasına rağmen NuGet ZIP zamanları değişiyordu. Mevcut betik hash hesaplamadan önce yalnız ZIP zamanlarını sabitler; eski 1.0.1 arşivi değiştirilmez.

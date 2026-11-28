@@ -24,6 +24,14 @@ if (-not (Test-Path $package)) { throw "Paket bulunamadı: $package" }
 
 # İçerik denetimi: yalnız beklenen dosyalar, gizli bilgi yok.
 Add-Type -AssemblyName System.IO.Compression.FileSystem
+# NuGet ZIP girişlerine derleme saatini yazar; aynı DLL bile farklı paket hash'i üretirdi.
+# İçerik değişmeden yalnız ZIP zamanları sabitlenir (DOS ZIP başlangıç tarihi).
+$archive = [System.IO.Compression.ZipFile]::Open($package, [System.IO.Compression.ZipArchiveMode]::Update)
+try {
+    foreach ($entry in $archive.Entries) {
+        $entry.LastWriteTime = [DateTimeOffset]::new(1980, 1, 1, 0, 0, 0, [TimeSpan]::Zero)
+    }
+} finally { $archive.Dispose() }
 $zip = [System.IO.Compression.ZipFile]::OpenRead($package)
 try {
     $names = $zip.Entries | ForEach-Object { $_.FullName }
