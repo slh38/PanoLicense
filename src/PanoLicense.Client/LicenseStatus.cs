@@ -18,7 +18,8 @@ public sealed record LicenseStatus(
     string? LastError = null,
     bool HardwareBackedKey = false,
     string? Package = null,
-    IReadOnlyList<string>? Modules = null)
+    IReadOnlyList<string>? Modules = null,
+    string? LicenseType = null)
 {
     [System.Text.Json.Serialization.JsonIgnore]
     internal Func<bool>? CommercialDecision { get; init; }

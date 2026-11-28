@@ -6,7 +6,7 @@ using PanoLicense.Client;
 namespace PanoLicense.Tests;
 
 /// <summary>
-/// Fixtures/php-es256-documents.json: sunucudaki PHP LicenseSigner ile imzalanmış gerçek belgeler.
+/// Fixtures/php-es256-documents.json: PHP openssl_sign ile Backend ES256 sözleşmesine göre üretilmiş izole test belgeleri.
 /// Bu testler PHP imzasının .NET'te doğrulandığını (dil arası uyum) ve offline kurallarını kanıtlar.
 /// </summary>
 public class LicenseDocumentTests : IDisposable
@@ -227,7 +227,7 @@ public class LicenseDocumentTests : IDisposable
         Assert.False(atEnd.AllowsCommercialOperations);
         Assert.Equal("offline_grace_exceeded", atEnd.Reason);
         Assert.False(OfflineLicenseEvaluator.Evaluate(document, Identity,
-            document.LicenseEndUtc, null, false).AllowsCommercialOperations);
+            document.LicenseEndUtc!.Value, null, false).AllowsCommercialOperations);
     }
 
     [Fact]

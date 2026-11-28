@@ -312,7 +312,11 @@ public sealed class LicenseManager : ILicenseClient, IAsyncDisposable
     private LicenseDocument? VerifyStored(PersistedState state)
     {
         if (state.Document is null || state.LicenseKey is null) return null;
-        var doc = _verifier.Verify(state.Document, Identity(state.LicenseKey), out _);
+        var identity = Identity(state.LicenseKey);
+        var doc = _verifier.Verify(state.Document, identity, out _);
+        // V1 yalnız geçmiş iptal için okunur; korumalı durum ve güncellik eşiği sıfırlanmaz.
+        if (doc is null && _verifier.ReadRevocationDocument(state.Document) is { } revoked && identity.Matches(revoked))
+            doc = revoked;
         return doc is not null && (state.NewestIssuedAt is not { } newest || doc.IssuedAt >= newest) ? doc : null;
     }
 
@@ -352,7 +356,7 @@ public sealed class LicenseManager : ILicenseClient, IAsyncDisposable
         LicenseStatus Make(LicenseState state, string reason, DateTimeOffset? until = null) => new(
             state, reason, key, doc?.Customer, doc?.Status, doc?.ExpiresAt, doc?.OfflineGraceDays ?? 7, until,
             _state.LastOnlineAt, HasCheckableLicense() ? _scheduler.NextOnlineAt : null, _lastError, _keys.IsHardwareBacked,
-            doc?.Package, doc?.Modules ?? []);
+            doc?.Package, doc?.Modules ?? [], doc?.LicenseType is { Length: > 0 } type ? type : null);
 
         if (key is null) return (Make(LicenseState.Unknown, "not_activated"), false);
 
@@ -371,7 +375,7 @@ public sealed class LicenseManager : ILicenseClient, IAsyncDisposable
         if (!eval.AllowsCommercialOperations)
             return (Make(eval.State, eval.Reason), eval.State is LicenseState.OfflineExpired or LicenseState.Unknown);
 
-        var until = doc.ValidUntil < doc.LicenseEndUtc ? doc.ValidUntil : doc.LicenseEndUtc;
+        var until = doc.AllowedUntil;
         return (Make(eval.State, eval.Reason, until), false);
     }
 

@@ -4,8 +4,8 @@
 
 Ana sözleşme [v2.3 §12](LICENSING_CONTRACT.md) iki repoda aynıdır.
 **Backend yerelde uygulandı (FAZ 6.2a.2b); tüketiciler bekliyor:** süreli/demo/ömür boyu tek v2; zorunlu imzalı license_type;
-term için geçerli expires_at, perpetual için açık null. Aktif v1 üretimi kaldırıldı; tüketicide ticari kabul kaldırılacak,
-yalnız geçmiş iptal kayıtları dar v1 okuyucusuyla doğrulanacak; ticari/modül/rapor yetkisi vermeyecek.
+term için geçerli expires_at, perpetual için açık null. Aktif v1 üretimi ve Client 1.1.0 kaynağında ticari kabul kaldırıldı; PanoPOS tüketici yükseltmesi bekliyor,
+yalnız geçmiş iptal kayıtları Client 1.1.0'da dar v1 okuyucusuyla doğrulanır; ticari/modül/rapor yetkisi vermez.
 Client 1.1.0 hedeflenir; Device Service ve WebApi aynı sürümü kullanacak. Null tek başına süresiz demek değildir.
 
 Offline term/demo için min(issued_at + 7/365 gün, lisans sonu), perpetual için issued_at + 7/365 gündür.
@@ -15,7 +15,7 @@ HTTP /api/v1 ve kanıt amaç metinlerindeki v1 belge sürümünden bağımsızd�
 
 **Mevcut yerel Backend:** tüm lisans/iptal belgeleri tek v2; resmî Client 1.0.1 v2 desteklemez.
 8b0b5cd'nin eski v1/v2 üretimi alttaki tarihsel bölümde korunur; güncel talimat değildir.
-Yeni Client 1.1.0, koordineli tüketici dağıtımı ve kabul bekliyor. İki geçici bayrak şimdilik kapalıdır,
+Client 1.1.0 kaynak geliştirmesi tamamlandı; resmî paket üretimi, koordineli tüketici dağıtımı ve kabul bekliyor. İki geçici bayrak şimdilik kapalıdır,
 koordineli dağıtım ve kabul sonrasında kaldırılacaktır. TEST kayıtları ve kalıcı güvenlik geçmişi silinmez.
 
 Durum: **F3b güvenlik düzeltmesi** — cihaz sahiplik kanıtı + anahtara bağlı imzalı belge.
@@ -267,3 +267,27 @@ Bu bölüm 8b0b5cd kodunu tarif eder. Önceki v2.2 kararı tarihçedir; güncel 
   Client 1.1.0 görevidir; bu sunucuda aktif v1 üretimini tutmak için gerekçe değildir.
 - Ortak v2.3 sözleşmesi değiştirilmedi; §12 gerçek durumundaki commit numaraları tarihli snapshot'tır.
   Bu yerel Backend ilerlemesi STATUS'tadır. Client/panel/PanoPOS entegrasyonu tamamlanmadı; canlı dağıtım kapalı.
+
+## Client 1.1.0 — FAZ 6.2a.3 kaynak API'si (resmî paket henüz yok)
+
+- LicenseDocumentVerifier.Verify yalnız zarf/payload v=2 kabul eder; v1 ticari yolda unsupported_version.
+  Eksik/bilinmeyen/çelişkili license_type/expires_at invalid_license_term ile reddedilir.
+  term geçerli YYYY-MM-DD; perpetual açık JSON null; eksik alan null sayılmaz. Demo perpetual olamaz.
+- Lisans politikası yalnız 7/365, demo yalnız 7 ve tek cihazdır. valid_until issued_at + politika süresini
+  veya term bitişini aşamaz. Geçersiz süre penceresi reddedilir; expired/revoked belgeler ticari izin vermez.
+- LicenseDocument.LicenseType: string ("term" | "perpetual"); ExpiresAt: string?;
+  LicenseEndUtc: DateTimeOffset? (perpetual null); AllowedUntil: DateTimeOffset (sonlu).
+  DateTimeOffset kesirli UTC hassasiyeti doğrulama, korumalı saklama ve karşılaştırmada korunur.
+- LicenseStatus.LicenseType: string?; doğrulanmış güncel tür yoksa null.
+  LicenseExpiresOn hâlâ string?; yalnız doğrulanmış perpetual türüyle null ömür boyu anlamına gelir.
+  Ticari izin yine LicenseManager.AllowsCommercialOperations; görüntüdeki tür/modül alanları yetki vermez.
+- LicenseManager.CreateCommercialProof / CommercialProofVerifier.Verify aynı imza ve opak zarf sözleşmesini
+  korur; perpetual için AllowedUntil yalnız valid_until, term için min(valid_until, LicenseEndUtc).
+- CommercialProofVerifier.ReadRevocation v2 iptal ve geçmiş v1 iptali okuyabilir. V1 aktif/demo reddedilir;
+  v1'e public ticari Verify üzerinden geçiş yoktur. Ürün/kimlik bağı ve sunucu imzası doğrulanır.
+- Korumalı mevcut v1 iptal belgesi açılışta yalnız iptal yolundan yüklenebilir ve orijinal string olarak
+  GetSignedRevocationDocument ile iletilebilir. Revoked listesi, watermark, newest_issued_at, cihaz anahtarı
+  ve saklama şeması sıfırlanmaz. Eski aktif v1 yüklenirse ticari izin açılmaz, online v2 gerekir.
+- Device Service tüketimi: doğrulanmış LicenseType + LicenseExpiresOn ayrımını yerel yanıta ekleme sonraki fazdır.
+  WebApi tüketimi: aynı 1.1.0 paketiyle Verify/ReadRevocation; nullable LicenseEndUtc kullanan çağrı varsa
+  uygun nullable denetimi gerekir. Mevcut PanoPOS kaynakları bu tur değiştirilmedi/derlenmedi.

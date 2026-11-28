@@ -1,17 +1,17 @@
 # PanoLicense — Durum
 
 ## Güncel lisans kapsamı — FAZ 6.2a (2026-11-28)
-- Son onaylı Backend commit: 8b0b5cd9344d900e0ff39c7af1ef58cf3ee1a2a7 (commit/push tamamlandı).
+- Son onaylı Backend commit: fb55106fb29cd923c463c970a90abac5e856e501 (tek v2 Backend; commit/push tamamlandı).
 - Ürün müşteriye çıkmadı; gerçek müşteri lisansı yok, tüm kayıtlar TEST. Kayıt/anahtar/audit silinmeyecek.
-- Ortak sözleşme v2.3 §12 iki repoda eşittir ve bu tur değiştirilmedi. Tek v2 Backend yerelde uygulandı; Client 1.1.0 henüz geliştirilmedi.
+- Ortak sözleşme v2.3 §12 iki repoda eşittir ve bu tur değiştirilmedi. Tek v2 Backend ve Client 1.1.0 kaynak geliştirmesi tamamlandı; resmî paket ve tüketici entegrasyonu bekliyor.
 - Gerçek yerel kod: süreli/demo/perpetual tek v2, zorunlu license_type ve kesirli zaman; aktif v1 üretimi yok. Admin-only dönüşüm ve mevcut nullable migration korundu.
   Önceki 76 hedefli test bu Backend commit'ine aittir; tek v2/1.1.0 kabulü değildir.
-- Client halen 1.0.1; v2 desteklemez. 1.1.0 paket, panel ve PanoPOS entegrasyonu bekliyor.
+- Mevcut resmî paket 1.0.1'dir ve v2 desteklemez; Client kaynak sürümü 1.1.0'dır. Resmî 1.1.0 paket, panel ve PanoPOS entegrasyonu bekliyor.
   Mevcut iki bayrak varsayılan kapalı kalır; koordineli dağıtım/kabul sonrası kaldırılması planlıdır.
 - Aşağıdaki eski faz/yayın notları tarihçedir; bu görevin güncel canlı doğrulaması değildir.
   Önceki MD turu b2f70c1 ile kapandı. Bu tur FAZ 6.2a.2b Backend + hedefli testler; yalnız kullanıcı ek onayıyla izole test DB migration'ı yapıldı, canlı işlem/commit/push yok.
 
-Son güncelleme: 2026-11-28 · Faz: **FAZ 6.2a.2b — tek v2 Backend yerelde tamamlandı; Client/entegrasyon bekliyor.** FAZ 6.2a.2 Backend commit/push tamamlandı. Ortak sözleşme: [LICENSING_CONTRACT](docs/LICENSING_CONTRACT.md) v2.3; güncel karar ve gerçek uygulama ayrımı yukarıdadır.
+Son güncelleme: 2026-11-28 · Faz: **FAZ 6.2a.3 — Client 1.1.0 kaynakları tamamlandı; kod onayı/paket/entegrasyon bekliyor.** FAZ 6.2a.2 Backend commit/push tamamlandı. Ortak sözleşme: [LICENSING_CONTRACT](docs/LICENSING_CONTRACT.md) v2.3; güncel karar ve gerçek uygulama ayrımı yukarıdadır.
 
 ## Karar geçmişi
 - 2026-11-22: İlk iskelet ASP.NET Core + SQL Server + IIS idi → **Laravel 13 (PHP 8.3+) + MySQL 8**'e geçildi. Sunucu tarafında .NET yok.
@@ -100,3 +100,19 @@ Son güncelleme: 2026-11-28 · Faz: **FAZ 6.2a.2b — tek v2 Backend yerelde tam
   Yeni migration yok. Canlı/dev DB, gerçek TEST lisansları, audit veya anahtar temizliği yapılmadı.
 - Client 1.1.0 ve geçmiş v1 iptal okuyucusu sonraki görevdir. Bu Backend mevcut iptal kayıtlarını okumaz/silmez;
   yeni iptal yanıtı da v2'dir. PanoPOS ve panel değişmedi. Koordineli kabul/dağıtım henüz yapılmadı.
+
+## FAZ 6.2a.3 — Client 1.1.0 (yerel; onay bekliyor)
+
+- Yalnız v2 ticari kabul; zorunlu license_type, term geçerli tarih, perpetual açık null;
+  eksik/bilinmeyen/çelişkili tür/tarih reddi. Demo term/7 gün/tek cihaz; sonlu 7/365 offline sınırı doğrulanır.
+- LicenseStatus.LicenseType eklendi (bilgi yoksa null); LicenseDocument.ExpiresAt ve LicenseEndUtc nullable,
+  AllowedUntil sonlu izin sınırını verir. Mevcut kanıt/kimlik/metot adları ve amaç metinleri korundu.
+- V1 yalnız geçmiş iptal okumada: ReadRevocation ve korumalı durumun iptal belgesi yüklemesi;
+  aktif v1 ticari/rapor/modül yetkisi vermez. Korumalı kayıt şeması, cihaz anahtarı ve iptal/zaman geçmişi sıfırlanmadı.
+- Yeni hedefli V2LicenseTests 26/26 PASS; ardından Client test paketinin tamamı bir kez: 111/111 PASS.
+  Gerçek API/DB E2E testi ortam kapısı kapalı olduğundan işlem yapmadan döndü; canlı bağlantı yok.
+  Release Client build 0 uyarı/0 hata. PanoPOS regresyonu veya Backend testi/migration çalıştırılmadı.
+- Resmî 1.0.1 paketi değişmedi (SHA-256 5bf8aee3…d954). 1.1.0 NuGet üretilmedi; kaynak commit/hash
+  kod onayı sonrası kapanışta mevcut paket betiğiyle kaydedilecek. Dağıtım bayrakları kapalı kaldı.
+- Backend, panel, ortak v2.3 sözleşmesi ve PanoPOS kaynakları değiştirilmedi. FAZ 6.2a.4 başlamadı.
+  Bu fazda commit/push, gerçek anahtar/DB işlemi veya TEST kaydı temizliği yok.

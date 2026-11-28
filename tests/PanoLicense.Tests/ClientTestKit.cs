@@ -83,7 +83,9 @@ internal sealed class FakeLicenseServer : HttpMessageHandler
     public sealed class License
     {
         public string Status = "active";
-        public string ExpiresAt = "2027-12-31";
+        public string? ExpiresAt = "2027-12-31";
+        public string LicenseType = "term";
+        public int Version = 2;
         public int GraceDays = 7;
         public string Package = "PRO";
         public List<string> Modules = new();
@@ -167,21 +169,27 @@ internal sealed class FakeLicenseServer : HttpMessageHandler
     public string Sign(string key, License lic, string fingerprint, string keyHash, DateTimeOffset? issued = null)
     {
         var issuedAt = issued ?? _time.GetUtcNow();
-        issuedAt = new DateTimeOffset(issuedAt.Ticks - issuedAt.Ticks % TimeSpan.TicksPerSecond, TimeSpan.Zero);
+        // Kesirli UTC zaman korunur.
         var grace = lic.Status == "demo" ? 7 : lic.GraceDays;
-        var licenseEnd = DateTimeOffset.Parse(lic.ExpiresAt + "T00:00:00Z").AddDays(1);
-        var validUntil = issuedAt.AddDays(grace) < licenseEnd ? issuedAt.AddDays(grace) : licenseEnd;
-        var payload = JsonSerializer.Serialize(new Dictionary<string, object>
+        DateTimeOffset? licenseEnd = lic.ExpiresAt is null ? null : DateTimeOffset.Parse(lic.ExpiresAt + "T00:00:00Z").AddDays(1);
+        var validUntil = licenseEnd is { } end && end < issuedAt.AddDays(grace) ? end : issuedAt.AddDays(grace);
+        var payload = JsonSerializer.Serialize(new Dictionary<string, object?>
         {
-            ["v"] = 1, ["license_key"] = key, ["product"] = Product, ["customer"] = lic.Customer,
-            ["status"] = lic.Status, ["state"] = lic.Status, ["offline_grace_days"] = grace, ["device_limit"] = 3,
+            ["v"] = lic.Version, ["license_type"] = lic.LicenseType, ["license_key"] = key, ["product"] = Product, ["customer"] = lic.Customer,
+            ["status"] = lic.Status, ["state"] = lic.Status, ["offline_grace_days"] = grace, ["device_limit"] = lic.Status == "demo" ? 1 : 3,
             ["package"] = lic.Package, ["modules"] = lic.Modules.OrderBy(m => m, StringComparer.Ordinal).ToArray(),
             ["fingerprint"] = fingerprint, ["device_key_hash"] = keyHash, ["device_status"] = "active",
             ["expires_at"] = lic.ExpiresAt, ["issued_at"] = Iso(issuedAt), ["valid_until"] = Iso(validUntil),
         });
-        var bytes = Encoding.UTF8.GetBytes(payload);
+        return SignPayload(JsonNode.Parse(payload)!.AsObject());
+    }
+
+    public string SignPayload(JsonObject payload, int? envelopeVersion = null)
+    {
+        var bytes = Encoding.UTF8.GetBytes(payload.ToJsonString());
         var sig = _signing.SignData(bytes, HashAlgorithmName.SHA256, DSASignatureFormat.Rfc3279DerSequence);
-        return new JsonObject { ["v"] = 1, ["kid"] = Kid, ["alg"] = "ES256", ["payload"] = B64(bytes), ["sig"] = B64(sig) }.ToJsonString();
+        return new JsonObject { ["v"] = envelopeVersion ?? payload["v"]!.GetValue<int>(), ["kid"] = Kid,
+            ["alg"] = "ES256", ["payload"] = B64(bytes), ["sig"] = B64(sig) }.ToJsonString();
     }
 
     public static HttpResponseMessage Error(int status, string code) =>
@@ -190,7 +198,7 @@ internal sealed class FakeLicenseServer : HttpMessageHandler
     public static HttpResponseMessage Json(int status, JsonNode body) =>
         new((HttpStatusCode)status) { Content = new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json") };
 
-    private static string Iso(DateTimeOffset t) => t.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    private static string Iso(DateTimeOffset t) => t.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.ffffff'Z'");
     private static string B64(byte[] b) => Convert.ToBase64String(b).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 }
 

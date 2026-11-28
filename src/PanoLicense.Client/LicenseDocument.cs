@@ -40,7 +40,10 @@ public sealed record LicenseDocument
     [JsonPropertyName("device_status")] public string DeviceStatus { get; init; } = "";
 
     /// <summary>Lisans bitiş günü (yyyy-MM-dd). Lisans bu günün sonuna (UTC) kadar geçerlidir.</summary>
-    [JsonPropertyName("expires_at")] public string ExpiresAt { get; init; } = "";
+    [JsonPropertyName("expires_at")] public string? ExpiresAt { get; init; }
+
+    /// <summary>Doğrulanmış v2 türü: term | perpetual. Geçmiş v1 iptallerinde boş olabilir.</summary>
+    [JsonPropertyName("license_type")] public string LicenseType { get; init; } = "";
 
     /// <summary>Sunucunun belgeyi ürettiği an (UTC); son başarılı doğrulama zamanı.</summary>
     [JsonPropertyName("issued_at")] public DateTimeOffset IssuedAt { get; init; }
@@ -49,7 +52,10 @@ public sealed record LicenseDocument
     [JsonPropertyName("valid_until")] public DateTimeOffset ValidUntil { get; init; }
 
     /// <summary>Lisansın bittiği an: bitiş gününü izleyen günün 00:00 UTC'si.</summary>
-    public DateTimeOffset LicenseEndUtc =>
+    public DateTimeOffset? LicenseEndUtc => ExpiresAt is null ? null :
         DateTimeOffset.ParseExact(ExpiresAt, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
             System.Globalization.DateTimeStyles.AssumeUniversal).AddDays(1);
+
+    /// <summary>Sonlu ticari/offline izin; ömür boyu lisansın da offline sonu vardır.</summary>
+    public DateTimeOffset AllowedUntil => LicenseEndUtc is { } end && end < ValidUntil ? end : ValidUntil;
 }

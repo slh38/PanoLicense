@@ -45,6 +45,9 @@ public static class OfflineLicenseEvaluator
 
         if (!expected.Matches(document))
             return Result(LicenseState.Unknown, "identity_mismatch");
+        if (document.Version != 2 || document.LicenseType is not ("term" or "perpetual")
+            || (document.LicenseType == "term" ? document.ExpiresAt is null : document.ExpiresAt is not null))
+            return Result(LicenseState.Unknown, "invalid_license_term");
         if (document.DeviceStatus != "active")
             return Result(LicenseState.Unknown, "device_released");
 
@@ -55,7 +58,7 @@ public static class OfflineLicenseEvaluator
 
         if (document.Status == "revoked")
             return Result(LicenseState.Revoked, "revoked");
-        if (nowUtc >= document.LicenseEndUtc)
+        if (document.LicenseEndUtc is { } end && nowUtc >= end)
             return Result(LicenseState.Expired, document.Status == "demo" ? "demo_expired" : "license_expired");
         if (nowUtc >= document.ValidUntil)
             return Result(LicenseState.OfflineExpired, "offline_grace_exceeded");

@@ -109,8 +109,8 @@ public sealed class CommercialProofVerifier : IDisposable
         if (document.Status is not ("active" or "demo")) return Fail("unknown_status");
 
         if (nowUtc < document.IssuedAt - OfflineLicenseEvaluator.ClockTolerance) return Fail("document_from_future");
-        var allowedUntil = document.ValidUntil < document.LicenseEndUtc ? document.ValidUntil : document.LicenseEndUtc;
-        if (nowUtc >= document.LicenseEndUtc) return Fail(document.Status == "demo" ? "demo_expired" : "license_expired");
+        var allowedUntil = document.AllowedUntil;
+        if (document.LicenseEndUtc is { } end && nowUtc >= end) return Fail(document.Status == "demo" ? "demo_expired" : "license_expired");
         if (nowUtc >= allowedUntil) return Fail("offline_grace_exceeded");
 
         byte[] signatureBytes;
@@ -134,7 +134,7 @@ public sealed class CommercialProofVerifier : IDisposable
     /// </summary>
     public SignedRevocation? ReadRevocation(string documentEnvelope)
     {
-        var document = _documents.VerifySignature(documentEnvelope, out _);
+        var document = _documents.ReadRevocationDocument(documentEnvelope);
         return document is { Status: "revoked" } && document.Product == _product && document.LicenseKey.Length > 0
             ? new SignedRevocation(document.LicenseKey, document.DeviceKeyHash, document.IssuedAt)
             : null;

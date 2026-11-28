@@ -1,6 +1,6 @@
 # PanoLicense.Client NuGet Paketi
 
-**FAZ 6.2a onaylı hedef (paket henüz üretilmedi):** PanoLicense.Client **1.1.0**,
+**FAZ 6.2a.3 kaynak geliştirmesi tamamlandı (kod onayı/paket üretimi bekliyor):** PanoLicense.Client **1.1.0**,
 tek v2 kullanım belgesi; aktif v1 ticari kabulü yok, yalnız geçmiş iptal okumaya dar v1 desteği.
 Device Service ve WebApi aynı sabit sürüme geçecektir. Güncel karar ortak sözleşme v2.3 §12'dir.
 Ürün satışa çıkmadığından ticari geriye uyumluluk zorunlu değildir; 1.1.0 sürüm numarası ürün sahibince
@@ -50,3 +50,24 @@ powershell -ExecutionPolicy Bypass -File tools\pack-client.ps1
 |---|---|---|---|
 | 1.0.0 | 2026-11-28 | `2a91b681a6a3b28a32b46e2dccd145b76031366a` | F4 Client + modüller (`HasModule`); ilk paket. 41 389 bayt. SHA-256 `3f7fc9b3db1df9e28a200ba5eea94ad4976f4eecfa77d8046d5ee70770eb2d91` |
 | 1.0.1 | 2026-11-28 | `846a407eb9014e25930d1c29722ffd60f61ccaee` | Ticari yetki kanıtı: `LicenseManager.CreateCommercialProof(challenge)`, `GetSignedRevocationDocument()`; ürün sunucusu için `CommercialProofVerifier` (`Verify`, `ReadRevocation`), `CommercialProofFormat`. Mevcut davranış değişmedi. 45 473 bayt. SHA-256 `5bf8aee31d031aa4dfe9a21b31b2a3e5e3ace88a06544e67a8c3b7e83653d954` |
+
+## 1.1.0 hazırlığı — kaynak hazır, resmî paket yok
+
+- csproj Version=1.1.0; net8.0 ve ek bağımlılık olmama politikası korundu.
+  Kullanım belgesi yalnız v2; dar v1 geçmiş iptal desteği CLIENT_API son bölümde.
+- API farkları: LicenseDocument.LicenseType eklendi; ExpiresAt string? ve LicenseEndUtc DateTimeOffset?
+  oldu; sonlu AllowedUntil eklendi. LicenseStatus'a son isteğe bağlı LicenseType parametresi eklendi.
+  Mevcut LicenseManager ve CommercialProofVerifier metot adları/kanıt biçimi korunur.
+  Nullable bitiş ve status constructor/deconstruction imzası nedeniyle tüketiciler yeniden derlenmeli;
+  eski binary'ye DLL değiştirme yöntemiyle dağıtılmaz. 1.1.0 sürümü bu satış öncesi geçiş için açıkça onaylı istisnadır.
+- Yeni 26 v2 vaka geçti; ardından bütün Client test paketi bir kez 111/111 PASS (gerçek API E2E kapısı
+  kapalı; DB/ağ senaryosu fiilen çalışmadı). Release build 0 uyarı/0 hata. PanoPOS kabulü bekliyor.
+- 1.0.1 paketi olduğu gibi korunur; doğrulanan SHA-256:
+  5bf8aee31d031aa4dfe9a21b31b2a3e5e3ace88a06544e67a8c3b7e83653d954.
+- **Kod onayı sonrasındaki kapanış:** kaynak commit/push → temiz Client ağacını doğrulama →
+  mevcut tools/pack-client.ps1 (AllowDirty kullanılmadan) → 1.1.0 nupkg + .sha256 →
+  nuspec repository commit ve içerik/gizli bilgi kontrolü → mevcut standartla yeniden üretim/hash doğrulama →
+  bu belgeye kaynak commit/boyut/SHA-256 kaydı. Bu görevde paket betiği çalıştırılmadı ve hash uydurulmadı.
+- Device Service ve WebApi aynı sabit [1.1.0] sürümüne koordineli geçecek.
+  Gömülü k1 ve fingerprint korunacak. Client/paket/sözleşme sürümü tek başına dağıtım izni değildir;
+  Backend'in iki geçici bayrağı kabul tamamlanana kadar kapalı kalır.
