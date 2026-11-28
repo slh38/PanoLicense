@@ -62,3 +62,16 @@ Son güncelleme: 2026-11-28 · Faz: **FAZ 2 — Katalog ve yayın hazırlığı*
 4. ~~PanoPOS modül matrisi~~ → onaylandı ve `config/catalog.php` ile uygulandı (2026-11-28, LICENSING_CONTRACT §2).
 5. Süresi dolan lisans için User yeni lisans veremez (aktif kayıt var); yenileme Admin'in süre uzatmasıyla.
 6. Demo kurulumunda KVKK bilgilendirme metni (PanoPOS tarafı).
+
+## FAZ 6.2a.2 — Ömür boyu lisans Backend (2026-11-28)
+
+- Yerel Backend tamamlandı: açık term/perpetual türü, nullable bitiş; yalnız Admin oluşturma ve tek yönlü
+  demo/term dönüşümü; kimlik/cihaz/paket/modül koruması; audit; iptal ve perpetual uzatma reddi.
+- v1 süreli belge korunur; v2 perpetual imza/offline hesapları hazır. Dağıtım varsayılan kapalı;
+  production ayrıca ayrı onay bayrağı gerektirir. Yeni Client/Device/WebApi hazır olmadan açılmaz.
+- Migration 2026_11_28_160000_add_perpetual_licenses yalnız korumalı yerel panolicense_test MySQL'de doğrulandı:
+  eski satır korunur, nullable tarih çalışır, null kayıt varsa kayıplı down engellenir. Canlıya uygulanmadı.
+- Hedefli PHPUnit: 76 farklı test PASS (12 yeni + 64 mevcut); PHP biçim/sözdizimi kontrolü.
+  Tam regresyon, panel/Client build veya NuGet üretimi yapılmadı.
+- Ortak sözleşme PanoLicense kopyası v2.2; PanoPOS v2.1 kopyasının eşitlemesi sonraki entegrasyonda bekliyor.
+  Panel, Client ve PanoPOS entegrasyonu bekliyor. Backend kapanışı ve commit/push kullanıcı tarafından onaylandı; canlı yayın yok.

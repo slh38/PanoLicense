@@ -241,7 +241,7 @@ class ClientLicenseService
         if ($license->status === LicenseStatus::Revoked) {
             throw ClientLicenseException::revoked();
         }
-        if ($license->expires_at->lt(Carbon::today())) {
+        if (! $license->hasValidTerm() || (! $license->isPerpetual() && $license->expires_at->lt(Carbon::today()))) {
             throw ClientLicenseException::expired($license->status === LicenseStatus::Demo);
         }
     }

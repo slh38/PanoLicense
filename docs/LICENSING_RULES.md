@@ -134,3 +134,19 @@ _İlk kayıt 2026-11-22; Laravel geçişinde (2026-11-22) yeniden teyit edildi._
 33. Planlanan (henüz geliştirilmemiş) modüller yalnız açıklamada belirtilir; ayrı DB alanı yoktur. PanoPOS tarafı
     kararları (tek lisans + ortak kota, lisans bitince okuma/rapor/yedek açık, modül kapanınca açık işlem tamamlanır):
     LICENSING_CONTRACT §7, §11.
+## Ömür boyu lisans — FAZ 6.2a.2 (2026-11-28, yerel Backend)
+
+- Tüm paketlerde term/perpetual. Term geçerli bitiş tarihi gerektirir; perpetual açık tür ve null bitiş taşır.
+  Eksik/geçersiz tarih süresiz sayılmaz. Mevcut kayıtlar migration ile varsayılan term olur; tarihleri değişmez.
+- Perpetual oluşturma ve demo/term dönüşümü yalnız Admin; User'a devredilemez.
+  Term → perpetual işleminde anahtar, cihazlar, limit, paket ve ek modüller aynen kalır.
+  İşlem satır kilidi + transaction ve audit ile yapılır. Revoked lisans dönüştürülemez/etkinleştirilemez.
+  Perpetual → term ve perpetual süre uzatma yasaktır. Genel lisans düzenleme ucu eklenmedi;
+  mevcut paket/modül/offline/iptal işlemleri kendi yetkileriyle devam eder.
+- Demo 14 gün Pro/tek cihaz/7 gün offline; yalnız Admin demo onayında perpetual seçebilir.
+- §22'deki lisans bitiş sınırı term içindir. Perpetual offline izni issued_at + 7/365 gün ile sınırlıdır.
+  365 belgesi bağlantı yokken uzaktan iptal edilemez. Online kontrol politikası değişmez.
+- Oluşturma/dönüşüm audit'i türü; dönüşüm ayrıca önceki tarihi tutar. İptal geçmişi değişmez.
+- Bakım ve güncelleme hakkı ayrı olup FAZ 7'ye bırakıldı.
+- Varsayılan kapalı dağıtım kilidi ve v1/v2 sözleşmesi: CLIENT_API, ortak sözleşme v2.2 §12.
+  Panel ve yeni Client henüz bu fazda geliştirilmedi; canlıda açılmamalıdır.

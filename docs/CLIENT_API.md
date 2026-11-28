@@ -191,3 +191,44 @@ PanoLicense sunucusuna yeni uç eklenmedi; bu bölüm Client'ın ürün içi (ö
   `device_released`, `revoked`, `unknown_status`, `document_from_future`, `license_expired`, `demo_expired`, `offline_grace_exceeded`, `bad_proof`.
 - **İptal iletimi:** `GetSignedRevocationDocument()` (cihaz) → `ReadRevocation(zarf)` (sunucu). İmzalı iptal kanıt gerektirmez,
   yalnız kısıtlar; iptal belgesi `Verify` ile ticari kanıt olarak kabul edilmez.
+
+## Ömür boyu Backend / v1-v2 geçişi (FAZ 6.2a.2)
+
+Ortak sözleşme v2.2 §12 geçerlidir. Bu bölüm mevcut tarihli v1 anlatımını perpetual için genişletir.
+
+### Yönetim
+- POST /licenses ve /licenses/{id}/approve: isteğe bağlı license_type (term/perpetual).
+  Alan yoksa geriye uyumlu term; term expires_at geçerli YYYY-MM-DD gerektirir.
+  Perpetual için açık expires_at:null zorunludur; null dışı bir tarih kabul edilmez.
+- Perpetual seçimi ayrıca can:license.perpetual (yalnız Admin); User'a izin kaydı eklemek yetki vermez.
+- POST /licenses/{id}/convert-perpetual: { "license_type": "perpetual" }.
+  Yalnız Admin, dağıtım açık, status=active ve geçerli term gerekir (süresi dolmuş term de dönüştürülebilir).
+  Tarih/anahtar/paket/cihaz alanları bu uçtan düzenlenmez. Başarılı yanıt LicenseResource.
+  Tekrar/ters dönüşüm, demo veya revoked: 422. Yetkisiz: 403. Audit: license.convert_perpetual,
+  data.from=term, to=perpetual, previous_expires_at; kim/zaman/IP aynı transaction içinde.
+- Perpetual için extend 422. Liste/detay/client durum yanıtında license_type ve nullable expires_at bulunur.
+  Süresi dolacak listesi perpetual içermez; aktif sayaç/dağılım içerir.
+
+### Belge
+- Term/demo zarf ve payload v=1, tarih zorunlu; mevcut v1 alanları/üretimi korunur.
+- Perpetual zarf ve payload v=2; license_type="perpetual", expires_at=null.
+  v2 term de sözleşmede tanımlıdır (geçerli tarih zorunlu), fakat Backend mevcut term için v1 üretir.
+- Eksik/bilinmeyen tür veya çelişkili tarih imzalanmaz. Null tarihli v1 asla üretilmez.
+  ES256/P-256/SHA-256/DER, kid, ham payload baytları, challenge ve cihaz anahtar bağı aynıdır.
+- v2 valid_until = issued_at + offline_grace_days; v1 min(offline sonu, ticari bitişi izleyen UTC 00:00).
+  v2 zamanları UTC, altı basamak kesirli ISO 8601'dir. Aynı saniyedeki v1'den sonra sıralama için
+  v2 issued_at'a 1 mikrosaniye eklenir; valid_until aynı issued_at üzerinden hesaplanır.
+  Yeni Client hassasiyeti kesmemeli; v1/v2'yi birlikte okuyup son belge/kalıcı iptal korumasını sürdürmelidir.
+- Kontrol yanıtının snapshot/imzası lisans satır kilidi içinde alınır: eski in-flight nesne,
+  dönüşüm tamamlandıktan sonra daha yeni zamanlı v1 üretemez.
+- Client 1.0.1 v2'yi unsupported_version ile reddeder; tüketiciler yükseltilmeden özellik açılmaz.
+  Paket bu fazda değiştirilmedi/üretilmedi. v2 reddini bağlantı hatası gibi yorumlayıp eski belgeye dönmek yasaktır.
+
+### Varsayılan kapalı güvenli dağıtım
+- LICENSE_PERPETUAL_ENABLED=false: oluşturma ve demo/term dönüşümü 422; mevcut perpetual için imzalı
+  yanıt üretimi 503 signing_unavailable. Süreli v1 ve demo normal çalışır.
+- Production'da yalnız enabled=true yeterli değildir: ayrıca LICENSE_PERPETUAL_PRODUCTION_APPROVED=true gerekir.
+  İki değer de varsayılan false. Mevcut .env değiştirilmedi; örnek dosyada yalnız kapalı değerler bulunur.
+- Ayrı yayın onayından önce: yeni Client'ın v1/v2 ve antirollback/iptal kabulü; tüm Device Service ve WebApi
+  tüketicilerinin yeni Client'a geçişi; panel/Desktop null-tür ayrımı; izole migration kabulü tamamlanmalıdır.
+  Bayrak kapatılması önceden verilmiş offline belgeyi geriye dönük iptal etmez.

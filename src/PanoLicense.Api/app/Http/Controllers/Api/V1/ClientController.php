@@ -12,6 +12,7 @@ use App\Support\LicenseSigner;
 use App\Support\SigningUnavailableException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
@@ -26,9 +27,7 @@ class ClientController extends Controller
 {
     private ?LicenseSigner $signer = null;
 
-    public function __construct(private readonly ClientLicenseService $service)
-    {
-    }
+    public function __construct(private readonly ClientLicenseService $service) {}
 
     public function challenge(Request $request): JsonResponse
     {
@@ -37,6 +36,7 @@ class ClientController extends Controller
             'operation' => ['required', Rule::in(['demo', 'activate', 'check'])],
             'license_key' => ['required_unless:operation,demo', 'nullable', 'string', 'max:40'],
         ]);
+
         return $this->respond(fn () => response()->json($this->service->challenge(
             $this->product($data), $data['operation'],
             $data['operation'] === 'demo' ? '' : strtoupper(trim($data['license_key'])),
@@ -140,13 +140,23 @@ class ClientController extends Controller
     /** İstemciye dönen lisans durumu. state: demo | demo_expired | active | expiring | expired | revoked */
     private function payload(License $license, Device $device): array
     {
+        return DB::transaction(function () use ($license, $device) {
+            $fresh = License::whereKey($license->id)->lockForUpdate()->firstOrFail();
+
+            return $this->lockedPayload($fresh, $device);
+        });
+    }
+
+    private function lockedPayload(License $license, Device $device): array
+    {
         $license->loadMissing('customer');
 
         return [
             'license_key' => $license->license_key,
             'state' => $license->displayState(),
             'status' => $license->status->value,
-            'expires_at' => $license->expires_at->toDateString(),
+            'license_type' => $license->license_type,
+            'expires_at' => $license->expires_at?->toDateString(),
             'device_limit' => $license->device_limit,
             'device_status' => $device->status,
             'customer_name' => $license->customer->name,

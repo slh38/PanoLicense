@@ -47,7 +47,7 @@ class DashboardController extends Controller
 
         if ($isAdminView) {
             $response['stats'] += [
-                'active' => License::where('status', LicenseStatus::Active)->where('expires_at', '>=', $today)->count(),
+                'active' => License::where('status', LicenseStatus::Active)->where(fn ($q) => $q->where('expires_at', '>=', $today)->orWhere(fn ($p) => $p->where('license_type', 'perpetual')->whereNull('expires_at')))->count(),
                 'customers' => Customer::where('is_active', true)->count(),
                 'devices' => Device::where('status', Device::STATUS_ACTIVE)->count(),
                 'inactive' => License::where('status', LicenseStatus::Revoked)
@@ -58,7 +58,7 @@ class DashboardController extends Controller
                 ->join('products', 'products.id', '=', 'licenses.product_id')
                 ->leftJoin('packages', 'packages.id', '=', 'licenses.package_id')
                 ->where('licenses.status', LicenseStatus::Active)
-                ->where('licenses.expires_at', '>=', $today)
+                ->where(fn ($q) => $q->where('licenses.expires_at', '>=', $today)->orWhere(fn ($p) => $p->where('licenses.license_type', 'perpetual')->whereNull('licenses.expires_at')))
                 ->groupBy('products.name', 'packages.name')
                 ->selectRaw("CONCAT(products.name, ' ', COALESCE(packages.name, '(paketsiz)')) as label, count(*) as value")
                 ->get();

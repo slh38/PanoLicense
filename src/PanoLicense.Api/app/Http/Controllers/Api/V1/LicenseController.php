@@ -11,6 +11,7 @@ use App\Models\License;
 use App\Models\Module;
 use App\Models\Product;
 use App\Support\Audit;
+use App\Support\PerpetualLicenses;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Exists;
 use Illuminate\Validation\ValidationException;
 
 class LicenseController extends Controller
@@ -85,13 +87,20 @@ class LicenseController extends Controller
             'customer.tax_number' => ['nullable', 'string', 'max:20'],
             'device_limit' => ['required', 'integer', 'min:1', 'max:1000'],
             'starts_at' => ['required', 'date'],
-            'expires_at' => ['required', 'date', 'after:starts_at', 'after_or_equal:today'],
+            'license_type' => ['sometimes', Rule::in(['term', 'perpetual'])],
+            'expires_at' => $this->expiryRules($request, true),
             'notes' => ['nullable', 'string', 'max:1000'],
             'offline_grace_days' => ['sometimes', 'integer', Rule::in([7, 365])],
             // Onay lisans vermektir: paket seçilebilir; verilmezse demonun paketi (Pro) kalır.
             'package_id' => ['sometimes', 'integer', $this->activePackageRule($license->product_id)],
         ]);
 
+        $data['license_type'] ??= 'term';
+        $data['expires_at'] ??= null;
+        if ($data['license_type'] === 'perpetual') {
+            Gate::authorize('license.perpetual');
+            PerpetualLicenses::ensureEnabled();
+        }
         if (($data['offline_grace_days'] ?? 7) == 365) {
             Gate::authorize('license.offline_policy');
         }
@@ -113,6 +122,7 @@ class LicenseController extends Controller
                     'package_id' => $data['package_id'] ?? $locked->package_id,
                     'device_limit' => $data['device_limit'],
                     'starts_at' => $data['starts_at'],
+                    'license_type' => $data['license_type'],
                     'expires_at' => $data['expires_at'],
                     'notes' => $data['notes'] ?? $locked->notes,
                     'created_by' => $userId,
@@ -126,6 +136,7 @@ class LicenseController extends Controller
                     'package' => $locked->package()->value('code'),
                     'installer' => $locked->installer_username,
                     'device_limit' => $data['device_limit'],
+                    'license_type' => $data['license_type'],
                     'expires_at' => $data['expires_at'],
                 ]);
             });
@@ -166,7 +177,7 @@ class LicenseController extends Controller
     }
 
     /** Paket aynı ürüne ait ve aktif olmalı. */
-    private function activePackageRule(int $productId): \Illuminate\Validation\Rules\Exists
+    private function activePackageRule(int $productId): Exists
     {
         return Rule::exists('packages', 'id')->where('product_id', $productId)->where('is_active', true);
     }
@@ -241,13 +252,20 @@ class LicenseController extends Controller
             'product_id' => ['required', 'integer', Rule::exists('products', 'id')->where('is_active', true)],
             'device_limit' => ['required', 'integer', 'min:1', 'max:1000'],
             'starts_at' => ['required', 'date'],
-            'expires_at' => ['required', 'date', 'after:starts_at'],
+            'license_type' => ['sometimes', Rule::in(['term', 'perpetual'])],
+            'expires_at' => $this->expiryRules($request),
             'notes' => ['nullable', 'string', 'max:1000'],
             'offline_grace_days' => ['sometimes', 'integer', Rule::in([7, 365])],
             // Paket zorunlu ve seçilen ürüne ait, aktif olmalı.
             'package_id' => ['required', 'integer', Rule::exists('packages', 'id')->where('product_id', (int) $request->input('product_id'))->where('is_active', true)],
         ]);
 
+        $data['license_type'] ??= 'term';
+        $data['expires_at'] ??= null;
+        if ($data['license_type'] === 'perpetual') {
+            Gate::authorize('license.perpetual');
+            PerpetualLicenses::ensureEnabled();
+        }
         if (($data['offline_grace_days'] ?? 7) == 365) {
             Gate::authorize('license.offline_policy');
         }
@@ -273,6 +291,7 @@ class LicenseController extends Controller
                     'package_id' => (int) $data['package_id'],
                     'device_limit' => $data['device_limit'],
                     'starts_at' => $data['starts_at'],
+                    'license_type' => $data['license_type'],
                     'expires_at' => $data['expires_at'],
                     'status' => LicenseStatus::Active,
                     'offline_grace_days' => (int) ($data['offline_grace_days'] ?? 7),
@@ -287,6 +306,7 @@ class LicenseController extends Controller
                     'product' => $product->code,
                     'package' => $license->package()->value('code'),
                     'device_limit' => $license->device_limit,
+                    'license_type' => $data['license_type'],
                     'expires_at' => $data['expires_at'],
                 ]);
 
@@ -331,18 +351,62 @@ class LicenseController extends Controller
             Audit::log('license.offline_policy_change', $license, ['from' => $from, 'to' => $to]);
         }
     }
+
+    /** Eski istemciler tür göndermeden süreli lisans oluşturmaya devam eder. */
+    private function expiryRules(Request $request, bool $approval = false): array
+    {
+        if ($request->input('license_type', 'term') === 'perpetual') {
+            // Tür açıkça perpetual ise bitiş alanı açık JSON null olmalıdır.
+            return ['present', 'nullable', function ($attribute, $value, $fail) {
+                if ($value !== null) {
+                    $fail('Ömür boyu lisansın bitiş tarihi null olmalıdır.');
+                }
+            }];
+        }
+
+        return ['required', 'date_format:Y-m-d', 'after:starts_at',
+            ...($approval ? ['after_or_equal:today'] : [])];
+    }
+
+    public function convertToPerpetual(Request $request, License $license): LicenseResource
+    {
+        Gate::authorize('license.perpetual');
+        PerpetualLicenses::ensureEnabled();
+        $request->validate([
+            'license_type' => ['required', Rule::in(['perpetual'])],
+            'expires_at' => ['prohibited'],
+        ]);
+        DB::transaction(function () use ($license) {
+            $locked = License::whereKey($license->id)->lockForUpdate()->firstOrFail();
+            $this->ensureActive($locked);
+            if (! $locked->hasValidTerm() || $locked->isPerpetual()) {
+                throw ValidationException::withMessages(['license_type' => 'Yalnız süreli ticari lisans dönüştürülebilir.']);
+            }
+            $old = $locked->expires_at->toDateString();
+            $locked->update(['license_type' => 'perpetual', 'expires_at' => null]);
+            Audit::log('license.convert_perpetual', $locked, [
+                'from' => 'term', 'to' => 'perpetual', 'previous_expires_at' => $old,
+            ]);
+        });
+
+        return new LicenseResource($this->loadDetail($license->fresh()));
+    }
+
     public function extend(Request $request, License $license): LicenseResource
     {
-        $data = $request->validate([
-            'expires_at' => ['required', 'date', 'after:'.$license->expires_at->toDateString()],
-        ], ['expires_at.after' => 'Yeni bitiş tarihi mevcut bitiş tarihinden sonra olmalıdır.']);
-
-        $this->ensureActive($license);
-        $old = $license->expires_at->toDateString();
-
-        DB::transaction(function () use ($license, $data, $old) {
-            $license->update(['expires_at' => $data['expires_at']]);
-            Audit::log('license.extend', $license, ['from' => $old, 'to' => $data['expires_at']]);
+        DB::transaction(function () use ($request, $license) {
+            $locked = License::whereKey($license->id)->lockForUpdate()->firstOrFail();
+            $this->ensureActive($locked);
+            if (! $locked->hasValidTerm() || $locked->isPerpetual()) {
+                throw ValidationException::withMessages(['license' => 'Ömür boyu veya geçersiz lisans uzatılamaz.']);
+            }
+            $data = $request->validate([
+                'license_type' => ['sometimes', Rule::in(['term'])],
+                'expires_at' => ['required', 'date_format:Y-m-d', 'after:'.$locked->expires_at->toDateString()],
+            ], ['expires_at.after' => 'Yeni bitiş tarihi mevcut bitiş tarihinden sonra olmalıdır.']);
+            $old = $locked->expires_at->toDateString();
+            $locked->update(['expires_at' => $data['expires_at']]);
+            Audit::log('license.extend', $locked, ['from' => $old, 'to' => $data['expires_at']]);
         });
 
         return new LicenseResource($this->loadDetail($license->fresh()));

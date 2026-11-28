@@ -54,6 +54,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // Paket değiştirme ve lisansa özel ek modüller: yalnız Admin. Cihaz limiti ve ek modüller pakete bağlı değişmez.
     Route::post('/licenses/{license}/package', [LicenseController::class, 'changePackage'])->middleware('can:license.modules');
     Route::put('/licenses/{license}/modules', [LicenseController::class, 'syncModules'])->middleware('can:license.modules');
+    Route::post('/licenses/{license}/convert-perpetual', [LicenseController::class, 'convertToPerpetual'])->middleware('can:license.perpetual');
     Route::post('/licenses/{license}/extend', [LicenseController::class, 'extend'])->middleware('can:license.extend');
     Route::post('/licenses/{license}/revoke', [LicenseController::class, 'revoke'])->middleware('can:license.revoke');
     // Demo onayı = lisans vermek: lisans verme yetkisi olan onaylar.

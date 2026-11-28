@@ -2,11 +2,12 @@
 
 namespace App\Http\Resources;
 
+use App\Models\License;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Models\License */
+/** @mixin License */
 class LicenseResource extends JsonResource
 {
     public function toArray(Request $request): array
@@ -40,7 +41,8 @@ class LicenseResource extends JsonResource
             'offline_grace_days' => $this->offlineGraceDays(),
             'device_limit' => $this->device_limit,
             'starts_at' => $this->starts_at->toDateString(),
-            'expires_at' => $this->expires_at->toDateString(),
+            'license_type' => $this->license_type,
+            'expires_at' => $this->expires_at?->toDateString(),
             'status' => $this->status->value,
             'state' => $this->displayState(),
             'source' => $this->source,

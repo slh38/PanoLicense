@@ -1,9 +1,10 @@
 # PanoLicense ↔ PanoPOS Ortak Lisans Sözleşmesi
 
-Sürüm: 2.1 · Tarih: 2026-11-28 · Durum: **FAZ 1.2 kararları ürün sahibi tarafından onaylandı (§11).**
+Sürüm: 2.2 · Tarih: 2026-11-28 · Durum: **FAZ 1.2 kararları ürün sahibi tarafından onaylandı (§11).**
 2.1: yalnız ortak faz sıralaması kesinleştirildi (§10, CTO çapraz denetimi); iş kuralı değişmedi.
-Bu dosya iki repoda (`PanoLicense/docs/` ve `PanoPos/docs/`) **aynı içerikle** tutulur; değişiklik iki repoda
-birlikte yapılır. PanoLicense iç kuralları: `LICENSING_RULES.md`, istemci HTTP sözleşmesi: `CLIENT_API.md`.
+Bu dosya iki repoda (`PanoLicense/docs/` ve `PanoPos/docs/`) aynı içerikle tutulur.
+**2.2 geçiş notu:** FAZ 6.2a.2 kapsamında yalnız PanoLicense kopyası güncellendi; PanoPOS salt okunur
+olduğundan eşitleme sonraki entegrasyon aşamasında yapılacaktır. PanoPOS halen 2.1 kullanır. PanoLicense iç kuralları: `LICENSING_RULES.md`, istemci HTTP sözleşmesi: `CLIENT_API.md`.
 §6 akışı onaylı mimari yöndür; ayrıntılı tasarımı FAZ 4.1–4.2'de yapılır.
 
 ## 1. Onaylı temel ilkeler
@@ -167,3 +168,29 @@ sorumlular: PanoPOS `docs/LICENSING_INTEGRATION.md` §10.
 
 Mobil garson cihazlarının nasıl kimlik doğrulayacağı ve sayılacağı (kota dışı) `mobile_waiter` geliştirilirken
 ayrıca tasarlanır; bu sözleşme yalnız satış bilgisayarı kotasından düşmeyeceğini sabitler.
+
+## 12. Süreli ve ömür boyu lisans (v2.2 — FAZ 6.2a.2)
+
+- Lite/Pano/Restaurant/Pro kullanım lisansı `term` veya `perpetual` olabilir.
+  Süreli lisans geçerli bitiş günü taşır; ömür boyu lisansın bitişi null'dır. Yapay tarih yoktur.
+  Türü olmayan v1 belge yalnız geçerli tarih ile süreli kabul edilir; null tek başına süresiz hak vermez.
+- Mevcut süreli belgeler v1 olarak kalır (payload'a yeni tür alanı eklenmez).
+  Ömür boyu belge zarf/payload v=2, imzalı `license_type=perpetual`, `expires_at=null` taşır.
+  v2 tür kümesi term/perpetual'dır; term geçerli tarih gerektirir. Backend süreli belgeleri v1 üretir.
+  Eksik/bilinmeyen/çelişkili tür-tarih reddedilir; imza algoritması, ham payload, kid ve cihaz bağı değişmez.
+- Süreli offline sınırı min(issued_at + 7/365 gün, bitişi izleyen 00:00 UTC);
+  ömür boyu offline sınırı issued_at + 7/365 gündür. Ömür boyu sınırsız offline değildir.
+  Demo yine 14 günlük Pro, tek cihaz ve 7 gün offline'dır.
+- Oluşturma ve demodan/term'den perpetual'a geçiş yalnız ADMIN; perpetual → term ve perpetual süre uzatma yok.
+  Term dönüşümünde anahtar, cihaz bağları, limit, paket ve ek modüller korunur; audit yazılır.
+  İptal dönüşümle kaldırılamaz. Bakım/güncelleme hakkı bu fazda uygulanmaz (FAZ 7).
+- **Dağıtım kapalı:** yeni çift sürüm Client, Device Service ve WebApi kabulü tamamlanmadan
+  perpetual oluşturma/dönüşüm/v2 üretimi açılmaz. Client 1.0.1 v2 desteklemez.
+  Üretim için özellik bayrağına ek ayrı production onayı gerekir; ayrıntı CLIENT_API.
+- Yeni tüketici null tarihi yalnız doğrulanmış açık perpetual türünde süresiz yorumlamalı;
+  belge yok/bilinmeyen durumdan ayırmalıdır. Sonlu valid_until, saat koruması, son belge sıralaması,
+  kalıcı iptal, cihaz limiti ve modül hakları aynen uygulanır.
+- v2 issued_at/valid_until UTC ISO 8601, altı basamak kesirli saniye içerir. Client bunları
+  hassasiyet kaybetmeden okumalı/saklamalı/karşılaştırmalıdır. Aynı saniyede verilen v1 belgesinden sonra
+  sıralama için v2 üretim zamanına bir mikrosaniye eklenir. Eski belge yeni hakları geri alamaz.
+  Dönüşüm ile belge snapshot/imzası aynı lisans satır kilidi üzerinden sıralanır.

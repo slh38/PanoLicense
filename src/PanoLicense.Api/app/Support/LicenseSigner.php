@@ -19,6 +19,7 @@ use RuntimeException;
 class LicenseSigner
 {
     public const ALG = 'ES256';
+
     public const VERSION = 1;
 
     private \OpenSSLAsymmetricKey $key;
@@ -51,17 +52,33 @@ class LicenseSigner
      */
     public function document(License $license, Device $device): array
     {
-        $issuedAt = now()->utc()->startOfSecond();
+        if (! $license->hasValidTerm()) {
+            throw new SigningUnavailableException('Geçersiz lisans türü/bitiş tarihi.');
+        }
+        if ($license->isPerpetual() && ! PerpetualLicenses::enabled()) {
+            throw new SigningUnavailableException('v2 lisans dağıtımı kapalı.');
+        }
+        $version = $license->isPerpetual() ? 2 : self::VERSION;
+        // v2 mikrosaniye taşır: aynı saniyedeki son v1 belgesinden sonra sıralanır.
+        $issuedAt = now()->utc();
+        if ($version === 1) {
+            $issuedAt->startOfSecond();
+        } else {
+            $issuedAt->addMicrosecond();
+        }
         $graceEnd = $issuedAt->copy()->addDays($license->offlineGraceDays());
         // Lisans, bitiş gününün sonuna kadar geçerlidir (sunucu saat dilimi UTC).
-        $licenseEnd = $license->expires_at->copy()->utc()->addDay()->startOfDay();
+        $licenseEnd = $license->expires_at?->copy()->utc()->addDay()->startOfDay();
 
         $license->loadMissing(['customer', 'product']);
         // Paket/modül değişiklikleri her yeni belgede güncel okunur (sonraki başarılı online kontrolde uygulanır).
         $license->load(['package.modules', 'addonModules']);
 
+        $validUntil = $licenseEnd === null || $graceEnd->lt($licenseEnd) ? $graceEnd : $licenseEnd;
+
         return $this->sign([
-            'v' => self::VERSION,
+            'v' => $version,
+            ...($version === 2 ? ['license_type' => 'perpetual'] : []),
             'license_key' => $license->license_key,
             'product' => $license->product->code,
             'customer' => $license->customer->name,
@@ -75,14 +92,31 @@ class LicenseSigner
             'fingerprint' => $device->fingerprint_hash,
             'device_key_hash' => $device->public_key_hash,
             'device_status' => $device->status,
-            'expires_at' => $license->expires_at->toDateString(),
-            'issued_at' => $issuedAt->toIso8601ZuluString(),
-            'valid_until' => ($graceEnd->lt($licenseEnd) ? $graceEnd : $licenseEnd)->toIso8601ZuluString(),
+            'expires_at' => $license->expires_at?->toDateString(),
+            'issued_at' => $version === 2 ? $issuedAt->format('Y-m-d\TH:i:s.u\Z') : $issuedAt->toIso8601ZuluString(),
+            'valid_until' => $version === 2 ? $validUntil->format('Y-m-d\TH:i:s.u\Z') : $validUntil->toIso8601ZuluString(),
         ]);
     }
 
     public function sign(array $payload): array
     {
+        $version = $payload['v'] ?? null;
+        $type = $payload['license_type'] ?? null;
+        $expiry = $payload['expires_at'] ?? null;
+        $validDate = is_string($expiry) && preg_match('/^\d{4}-\d{2}-\d{2}$/D', $expiry)
+            && ($date = \DateTimeImmutable::createFromFormat('!Y-m-d', $expiry))
+            && $date->format('Y-m-d') === $expiry;
+        if (($version === 1 && ($type !== null || ! $validDate))
+            || ($version === 2 && (! array_key_exists('expires_at', $payload)
+                || ! in_array($type, ['term', 'perpetual'], true)
+                || ($type === 'term' ? ! $validDate : $expiry !== null)
+                || ($type === 'perpetual' && ($payload['status'] ?? null) === 'demo')))
+            || ! in_array($version, [1, 2], true)) {
+            throw new SigningUnavailableException('Geçersiz belge türü/bitiş tarihi.');
+        }
+        if ($version === 2 && ! PerpetualLicenses::enabled()) {
+            throw new SigningUnavailableException('v2 lisans dağıtımı kapalı.');
+        }
         $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
 
         if (! openssl_sign($json, $signature, $this->key, OPENSSL_ALGO_SHA256)) {
@@ -90,7 +124,7 @@ class LicenseSigner
         }
 
         return [
-            'v' => self::VERSION,
+            'v' => $version,
             'kid' => $this->keyId,
             'alg' => self::ALG,
             'payload' => self::base64url($json),

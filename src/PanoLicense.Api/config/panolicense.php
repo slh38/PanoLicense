@@ -3,6 +3,10 @@
 return [
     'version' => '0.4.0',
 
+    // Tüketiciler v2 hazır olmadan açılmaz. Production için ayrı açık dağıtım onayı da gerekir.
+    'perpetual_enabled' => env('LICENSE_PERPETUAL_ENABLED', false),
+    'perpetual_production_approved' => env('LICENSE_PERPETUAL_PRODUCTION_APPROVED', false),
+
     // Onaylı karar: PanoPOS kurulumunda başlatılan demo süresi (gün).
     'demo_days' => (int) env('LICENSE_DEMO_DAYS', 14),
 

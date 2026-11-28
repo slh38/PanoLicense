@@ -282,3 +282,14 @@ Kayıt tamamlanmadan çökme ve dondurulmuş saat belirsizliği için onaylı s�
   aktif ürün, mevcut lisansın activate/check ve challenge akışlarında yalnız kayıtlı ürün ister.
   LicenseController.store aktif ürün şartını korur. Ek tablo/sorgu/Client değişikliği yoktur.
   Lisans/kota/sahiplik kontrolleri ve paket/modül hesabı değişmez; kural LICENSING_RULES §32.
+## Ömür boyu Backend genişletmesi (FAZ 6.2a.2)
+
+licenses.license_type varchar(20) NOT NULL DEFAULT term; expires_at nullable DATE.
+2026_11_28_160000_add_perpetual_licenses mevcut tarihleri değiştirmez. Null tarihli kayıt varken
+down güvenli biçimde durur; yapay tarih veya kayıt silme yoktur. Yalnız izole panolicense_test üzerinde doğrulandı.
+
+Ömür boyu izin kararı açık tür + null tarihi birlikte gerektirir. İş kuralları LICENSING_RULES son bölümde,
+v1/v2 ve dağıtım kilidi CLIENT_API'dedir. §7/§10'daki ticari lisans bitiş sınırı term için uygulanır.
+§6'daki online kontrol okumasına ek olarak yanıt snapshot/imzası kısa lisans satır kilidi içinde alınır;
+dönüşümle belge sıralamasını korur. Satış akışına sorgu/yazım eklenmedi. Yeni servis/bağımlılık yoktur.
+Yeni Client ve PanoPOS tüketicileri bu fazda uygulanmadı; özellik varsayılan kapalıdır.

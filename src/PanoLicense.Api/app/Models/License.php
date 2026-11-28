@@ -17,11 +17,11 @@ class License extends Model
     /** "Süresi dolacak" penceresi (gün). Onaylı karar: 30 gün. */
     public const EXPIRING_WINDOW_DAYS = 30;
 
-    protected $attributes = ['offline_grace_days' => 7];
+    protected $attributes = ['offline_grace_days' => 7, 'license_type' => 'term'];
 
     protected $fillable = [
         'license_key', 'customer_id', 'product_id', 'package_id', 'device_limit',
-        'starts_at', 'expires_at', 'status', 'source', 'notes', 'created_by',
+        'starts_at', 'expires_at', 'license_type', 'status', 'source', 'notes', 'created_by',
         'installer_username', 'installed_by', 'offline_grace_days',
     ];
 
@@ -68,6 +68,7 @@ class License extends Model
     /**
      * Geçerli modüller = paket modülleri + lisansa özel ek modüller; yalnız aktif modüller, koda göre sıralı.
      * İmzalı belgeye bu liste girer.
+     *
      * @return Collection<int, Module>
      */
     public function effectiveModules(): Collection
@@ -119,9 +120,22 @@ class License extends Model
         return $this->devices()->where('status', Device::STATUS_ACTIVE);
     }
 
+    /** Null tarih tek başına süresiz hak değildir; bozuk kombinasyonlar kapalıdır. */
+    public function hasValidTerm(): bool
+    {
+        return ($this->license_type === 'term' && $this->expires_at !== null)
+            || ($this->license_type === 'perpetual' && $this->expires_at === null
+                && $this->status !== LicenseStatus::Demo);
+    }
+
+    public function isPerpetual(): bool
+    {
+        return $this->license_type === 'perpetual' && $this->hasValidTerm();
+    }
+
     public function isUsable(): bool
     {
-        return $this->status !== LicenseStatus::Revoked && ! $this->expires_at->lt(Carbon::today());
+        return $this->status !== LicenseStatus::Revoked && $this->hasValidTerm() && ($this->isPerpetual() || ! $this->expires_at->lt(Carbon::today()));
     }
 
     /**
@@ -132,7 +146,7 @@ class License extends Model
         $today = Carbon::today();
 
         return $query->where('status', LicenseStatus::Active)
-            ->whereBetween('expires_at', [$today->copy()->subDays($days), $today->copy()->addDays($days)]);
+            ->where('license_type', 'term')->whereBetween('expires_at', [$today->copy()->subDays($days), $today->copy()->addDays($days)]);
     }
 
     /** Panelde gösterilen durum: revoked > demo/demo_expired > expired > expiring > active. */
@@ -142,6 +156,12 @@ class License extends Model
             return 'revoked';
         }
 
+        if (! $this->hasValidTerm()) {
+            return 'invalid';
+        }
+        if ($this->isPerpetual()) {
+            return 'active';
+        }
         $today = Carbon::today();
         if ($this->status === LicenseStatus::Demo) {
             return $this->expires_at->lt($today) ? 'demo_expired' : 'demo';

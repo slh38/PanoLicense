@@ -120,3 +120,19 @@ Araç yalnız geçici (repo dışı); test sonunda TEST lisansları iptal edildi
 Gözlem: lisans oluşturmada `license.offline_policy_change` logu `license.create`'ten önce yazılıyor (aynı transaction;
 yalnız sıralama, işlevsel etkisi yok). User HTTP 403'ü canlıda parola girilmeden yapılamadığı için Gate ile doğrulandı;
 HTTP 403 testleri PHPUnit'te kapsanıyor.
+
+## FAZ 6.2a.2 — Ömür boyu Backend hedefli kabul
+
+- PerpetualLicenseTest: 11/11 PASS, 167 assertion. Dört paket/iki tür, Admin/User, demo,
+  tek yönlü dönüşüm, kimlik/cihaz/modül koruması, audit, iptal, uzatma reddi, 7/365,
+  v1/v2 imza, geçersiz kombinasyonlar, kapalı özellik/production ikinci onayı,
+  eski snapshot ve aynı saniyede v1→v2 sıralaması.
+- PerpetualMigrationTest: 1/1 PASS, 6 assertion. Gerçek yerel MySQL'de nullable up/down/up;
+  önceki term satırının tüm alanları korunur; perpetual/null varken down reddedilir.
+  DDL implicit commit nedeniyle ayrı DatabaseMigrations fixture'ı kullanır.
+- İlgili mevcut AuthorizationTest, OfflinePolicyTest, LicenseDocumentTest, LicenseTest,
+  ClientActivationTest, ClientDemoTest, DeviceProofTest, CatalogTest: toplam 64 PASS.
+- Toplam 76 farklı hedefli test başarılı; yalnız korumalı 127.0.0.1/panolicense_test.
+  Canlı/dev DB migration yok. Tam regresyon ve panel/Client build yok.
+- Yeni Client'ta v1/v2 doğrulama, eski belge reddi ve kalıcı iptal kabulü sonraki aşamanın şartıdır;
+  Backend testi Client 1.0.1'e v2 desteği kazandırmaz.
