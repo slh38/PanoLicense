@@ -1,12 +1,12 @@
 # PanoLicense ↔ PanoPOS Ortak Lisans Sözleşmesi
 
-Sürüm: 2.2 · Tarih: 2026-11-28 · Durum: **FAZ 1.2 kararları ürün sahibi tarafından onaylandı (§11).**
-2.1: yalnız ortak faz sıralaması kesinleştirildi (§10, CTO çapraz denetimi); iş kuralı değişmedi.
-Bu dosya iki repoda (`PanoLicense/docs/` ve `PanoPos/docs/`) aynı içerikle tutulur.
-**2.2 geçiş notu:** FAZ 6.2a.2 kapsamında yalnız PanoLicense kopyası güncellendi; PanoPOS salt okunur
-olduğundan eşitleme sonraki entegrasyon aşamasında yapılacaktır. PanoPOS halen 2.1 kullanır. PanoLicense iç kuralları: `LICENSING_RULES.md`, istemci HTTP sözleşmesi: `CLIENT_API.md`.
-§6 akışı onaylı mimari yöndür; ayrıntılı tasarımı FAZ 4.1–4.2'de yapılır.
-
+Sürüm: 2.3 · Tarih: 2026-11-28 · Durum: **FAZ 6.2a nihai tek v2 kararı onaylandı; uygulama bekliyor (§12).**
+2.1: ortak faz sıralaması; 2.2: önceki süreli v1 / perpetual v2 kararı (tarihçe §13).
+2.3: tüm kullanım lisanslarında tek v2, hedef Client 1.1.0 ve yalnız geçmiş iptal için dar v1 okuması.
+Bu dosya PanoLicense/docs ve PanoPos/docs altında birebir aynı tutulur.
+Güncel ticari/teknik karar kaynağı §12'dir; geçmiş faz kayıtları tamamlanan eski uygulamayı anlatır.
+PanoLicense iç kuralları: LICENSING_RULES.md; HTTP sözleşmesi: CLIENT_API.md.
+PanoPOS uygulama ve kabul ayrıntıları: LICENSING_INTEGRATION.md.
 ## 1. Onaylı temel ilkeler
 - **Firma + ürün bazında tek lisans.** Cihaz kotası firmanın bütün şubelerinde ortaktır.
 - Her **satış bilgisayarı** ayrı cihaz hakkı kullanır. Mobil garson cihazları bu kotadan düşmez.
@@ -93,10 +93,10 @@ ama Desktop'a güvenilmez: her şey imza ile doğrulanır.
 4. WebApi doğrular:
    - Belge imzası (gömülü PanoLicense açık anahtarı, `kid`) ve ürün `PANOPOS`;
    - `device_key_hash = SHA-256(açık anahtar SPKI)`; challenge imzası bu anahtarla geçerli ve tek kullanımlık;
-   - belge `valid_until` ve lisans bitişi WebApi zamanına göre geçmemiş; durum iptal değil;
+   - belge `valid_until` ve süreli lisansın bitişi WebApi zamanına göre geçmemiş; durum iptal değil;
    - lisans anahtarı firmaya bağlı tek lisansla aynı.
 5. Başarılıysa terminal oturumu şunlara bağlanır: lisans anahtarı, cihaz anahtar özeti, `modules`, izin bitişi
-   = min(`valid_until`, lisans bitişi). Fiyat, stok, tahsilat gibi kararlar değişmez; yalnız erişim kapısıdır.
+   = süreli lisansta min(`valid_until`, lisans bitişi), ömür boyunda `valid_until` (yerel oturum üst sınırı ayrıca uygulanır). Fiyat, stok, tahsilat gibi kararlar değişmez; yalnız erişim kapısıdır.
 
 WebApi, PanoLicense sunucusuna bağlanmaz; yalnız imzalı belgeyi doğrular. Belge imzası sahte modül/izin
 eklenmesini, challenge imzası başka PC'nin belgesinin kopyalanmasını engeller. Ana bilgisayar saat güvenliği
@@ -169,7 +169,67 @@ sorumlular: PanoPOS `docs/LICENSING_INTEGRATION.md` §10.
 Mobil garson cihazlarının nasıl kimlik doğrulayacağı ve sayılacağı (kota dışı) `mobile_waiter` geliştirilirken
 ayrıca tasarlanır; bu sözleşme yalnız satış bilgisayarı kotasından düşmeyeceğini sabitler.
 
-## 12. Süreli ve ömür boyu lisans (v2.2 — FAZ 6.2a.2)
+## 12. Güncel lisans kararı — tek v2 (FAZ 6.2a, ONAYLANDI; uygulama bekliyor)
+
+Bu bölüm güncel karar kaynağıdır. §13'teki v1/v2 ayrımı ve çift sürüm ticari uyumluluk
+talimatı bu kararla geçersiz kılınmıştır; geçmiş uygulama kaydı olarak korunur.
+
+### Ticari kurallar
+- Ürün henüz müşteriye çıkmadı; gerçek müşteriye verilmiş lisans yoktur. Mevcut kayıtların tamamı TEST amaçlıdır.
+  Eski Client ve belge sürümleriyle ticari geriye uyumluluk zorunlu değildir; gereksiz uyumluluk kodu eklenmez.
+- Lite, Pano, Restaurant ve Pro paketlerinin tümünde süreli ve ömür boyu kullanım lisansı bulunur.
+  Süreli lisansın geçerli bitiş tarihi vardır; ömür boyu lisansın bitiş tarihi yoktur. Yapay 2099/9999 tarihleri kullanılmaz.
+- Ömür boyu oluşturma, demodan ömür boyuna onay ve süreli → ömür boyu dönüşüm yalnız ADMIN yetkisindedir.
+  Ömür boyu → süreli dönüşüm ve ömür boyu süre uzatma yoktur. İptal edilmiş lisans dönüşümle etkinleştirilemez.
+  Süreli dönüşümünde anahtar, cihaz bağları, cihaz limiti, paket ve ek modüller korunur; audit yazılır.
+- Bakım/güncelleme hakkı kullanım lisansından bağımsızdır. Uygulaması FAZ 7 kapsamındadır; bu geçişte eklenmez.
+- Demo 14 günlük Pro, tek cihaz ve 7 günlük offline politika olarak kalır.
+
+### Tek belge ve ortak Client
+- Süreli, demo ve ömür boyu belgelerin zarfı ve imzalı payload'u v=2 olacaktır.
+  İmzalı license_type alanı zorunludur: term | perpetual.
+  term geçerli YYYY-MM-DD expires_at gerektirir; perpetual açık expires_at:null gerektirir.
+  Demo term'dür. Eksik/bilinmeyen/çelişkili tür-tarih reddedilir.
+  Belge yok/bilinmeyen durum, doğrulanmış perpetual/null durumundan ayrılır.
+- Aktif v1 belge üretimi ve ticari kabulü kaldırılacaktır. Yalnız geçmiş imzalı iptal kayıtlarının
+  okunup doğrulanması için dar kapsamlı v1 desteği korunacaktır. Bu yol ticari yetki, modül veya rapor hakkı vermez.
+  Eski aktif belgeye fallback yapılmaz. Genel çift sürüm ticari doğrulayıcı hedeflenmez.
+- Hedef paket PanoLicense.Client 1.1.0'dır. Device Service ve WebApi aynı sabit Client sürümünü kullanacaktır.
+  1.0.1 halen mevcut pakettir ve v2 desteklemez; 1.1.0 henüz üretilmiş/entegre edilmiş değildir.
+- ECDSA P-256/ES256, ham payload imzası, k1, cihaz anahtarları, sahiplik kanıtı ve tek kullanımlık challenge korunur.
+  Belge sürümünün v2 olması HTTP /api/v1 yolunu, cihaz/ticari kanıt amaç metinlerini veya yerel durum dizinlerini
+  kendiliğinden değiştirmez; bunlar belge sürümüyle farklı sözleşmelerdir.
+
+### Offline, kalıcı güvenlik ve dağıtım
+- Süreli/demo: valid_until = min(issued_at + offline_grace_days, lisans bitişini izleyen 00:00 UTC).
+  Ömür boyu: valid_until = issued_at + offline_grace_days. Ömür boyu sınırsız offline değildir.
+  Standart 7 ve yalnız ADMIN'in verdiği özel 365 gün politikası korunur.
+- 6 saat online kontrol, bağlantı dönüşünde ilk fırsatta doğrulama, retry/backoff/jitter ve satışta
+  ağ/disk erişimi yapmama kuralları değişmez. 365 günlük offline izin bağlantı yokken uzaktan iptal edilemez.
+- Cihaz limiti, modül hakları, kalıcı iptal, güvenilir saat ve eski belge koruması korunur.
+  Yeni belge geçişi iptal geçmişini veya güvenilir zaman/belge sıralaması kayıtlarını sıfırlamaz.
+  Eski aktif v1 belge yeni yetki vermez; korumalı geçmiş silinerek geçiş yapılmaz.
+- Geçici dağıtım bayrakları koordineli dağıtım ve kabul tamamlanana kadar mevcut kapalı güvenli davranışı korur;
+  kabul sonrasında ayrı kodlama/dağıtım adımında kaldırılacaktır. Bu MD değişikliği özelliği açmaz.
+- TEST kayıtları silinmez; DB, tablo, lisans, anahtar ve audit temizliği bu geçişin şartı değildir.
+  Yeni tablo veya gereksiz migration yoktur. Hazırlanmış nullable migration geçerlidir; mevcut tarihleri değiştirmez.
+  Null bitişli kayıt varken kayıplı rollback engeli korunur.
+- Kabul: Backend, Client, Device Service ve WebApi tek sözleşmede buluşmalı; geçmiş v1 iptal okuması,
+  aktif v1 reddi, v2 tür/tarih doğrulaması, offline sınırları ve eski belge/iptal koruması doğrulanmalıdır.
+  Panel/Desktop tür-tarih ayrımını kullanmalıdır. Bu kabul henüz yapılmadı.
+
+### Gerçek uygulama durumu
+- PanoLicense Backend 8b0b5cd9344d900e0ff39c7af1ef58cf3ee1a2a7: term/demo v1, perpetual v2;
+  nullable migration ve Admin dönüşümü hazır, özellik kapalıdır. Tek v2 sadeleştirmesi henüz kodlanmadı.
+- PanoPOS 4edc1016105a7d6d565ddd0190f559a2ff0e0a80: Device Service/WebApi Client 1.0.1 kullanır.
+  Client 1.1.0, tek v2 entegrasyonu, panel/Desktop güncellemesi ve koordineli kabul beklemektedir.
+- Bu sözleşme güncellemesi yalnız dokümantasyondur; kodlama, paket üretimi veya canlı yayın tamamlandı anlamına gelmez.
+
+## 13. Tarihsel karar — v2.2 / FAZ 6.2a.2
+
+Aşağıdaki kayıt 8b0b5cd Backend uygulamasını ve önceki kararı açıklar.
+**Süreli belgeleri v1 tutma ve yeni Client'ta çift sürüm ticari destek talimatları §12 ile geçersizdir.**
+Diğer güvenlik/ticari kurallar §12 ile çelişmediği ölçüde korunur; bu bölüm yeni geliştirme talimatı değildir.
 
 - Lite/Pano/Restaurant/Pro kullanım lisansı `term` veya `perpetual` olabilir.
   Süreli lisans geçerli bitiş günü taşır; ömür boyu lisansın bitişi null'dır. Yapay tarih yoktur.

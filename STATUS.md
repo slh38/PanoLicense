@@ -1,6 +1,17 @@
 # PanoLicense — Durum
 
-Son güncelleme: 2026-11-28 · Faz: **FAZ 2 — Katalog ve yayın hazırlığı** tamamlandı (yerel; commit ve yayın yok). Ortak sözleşme: [LICENSING_CONTRACT](docs/LICENSING_CONTRACT.md) v2.
+## Güncel lisans kapsamı — FAZ 6.2a (2026-11-28)
+- Son onaylı Backend commit: 8b0b5cd9344d900e0ff39c7af1ef58cf3ee1a2a7 (commit/push tamamlandı).
+- Ürün müşteriye çıkmadı; gerçek müşteri lisansı yok, tüm kayıtlar TEST. Kayıt/anahtar/audit silinmeyecek.
+- Ortak sözleşme v2.3 §12 iki repoda eşitlendi. Tek v2 ve Client 1.1.0 **onaylandı, henüz kodlanmadı**.
+- Gerçek kod: süreli/demo v1, perpetual v2; Admin-only oluşturma/tek yönlü dönüşüm ve nullable migration hazır.
+  Önceki 76 hedefli test bu Backend commit'ine aittir; tek v2/1.1.0 kabulü değildir.
+- Client halen 1.0.1; v2 desteklemez. 1.1.0 paket, panel ve PanoPOS entegrasyonu bekliyor.
+  Mevcut iki bayrak varsayılan kapalı kalır; koordineli dağıtım/kabul sonrası kaldırılması planlıdır.
+- Aşağıdaki eski faz/yayın notları tarihçedir; bu görevin güncel canlı doğrulaması değildir.
+  Bu tur yalnız MD güncellendi; kodlama, test/build, DB/canlı işlem veya yeni commit/push yapılmadı.
+
+Son güncelleme: 2026-11-28 · Faz: **FAZ 6.2a — tek v2 kararı onaylı; uygulama bekliyor.** FAZ 6.2a.2 Backend commit/push tamamlandı. Ortak sözleşme: [LICENSING_CONTRACT](docs/LICENSING_CONTRACT.md) v2.3; güncel karar ve gerçek uygulama ayrımı yukarıdadır.
 
 ## Karar geçmişi
 - 2026-11-22: İlk iskelet ASP.NET Core + SQL Server + IIS idi → **Laravel 13 (PHP 8.3+) + MySQL 8**'e geçildi. Sunucu tarafında .NET yok.
@@ -11,7 +22,7 @@ Son güncelleme: 2026-11-28 · Faz: **FAZ 2 — Katalog ve yayın hazırlığı*
   (isteğe bağlı, yoksa son kullanıcı). Demo onayı `license.create` yetkisiyle. PanoPOS tarafı bu repo kapsamında değil.
 - 2026-11-27: İmza algoritması **ECDSA P-256 (ES256)** onaylandı.
 
-## Gerçek tamamlanma durumu
+## Önceki fazların tamamlanma kayıtları (tarihçe)
 
 | Alan | Durum | Not |
 |---|---|---|
@@ -44,7 +55,7 @@ Son güncelleme: 2026-11-28 · Faz: **FAZ 2 — Katalog ve yayın hazırlığı*
 - Yerelde doğrulandı: yeni lisans/demo engellenir; mevcut lisansların aktivasyon/check/challenge ve offline yenilemesi sürer.
 - Hedefli PHPUnit 27/27; paket/modül davranışı korunur. Migration/yayın/commit yok.
 
-## Sonraki aşamalar
+## Önceki fazların sonraki aşama notları (tarihçe; güncel görev listesi değildir)
 - **F3b güvenlik:** cihaz P-256 anahtarı + 120 saniyelik atomik tek kullanımlık challenge; belge anahtar hash'ine bağlı.
   Client'ta beklenen ürün/lisans/fingerprint/yerel anahtar hash'i zorunlu. Eski aktif anahtarsız kayda otomatik bağlama yok;
   yetkili release + kanıtlı yeniden aktivasyon gerekir. Migration 2026_11_27_120000_add_device_proof yalnız test ortamı.
@@ -73,5 +84,5 @@ Son güncelleme: 2026-11-28 · Faz: **FAZ 2 — Katalog ve yayın hazırlığı*
   eski satır korunur, nullable tarih çalışır, null kayıt varsa kayıplı down engellenir. Canlıya uygulanmadı.
 - Hedefli PHPUnit: 76 farklı test PASS (12 yeni + 64 mevcut); PHP biçim/sözdizimi kontrolü.
   Tam regresyon, panel/Client build veya NuGet üretimi yapılmadı.
-- Ortak sözleşme PanoLicense kopyası v2.2; PanoPOS v2.1 kopyasının eşitlemesi sonraki entegrasyonda bekliyor.
+- Tarihsel FAZ 6.2a.2 kapanışında sözleşme v2.2/v2.1 ayrışmıştı; bu MD turunda iki kopya v2.3 olarak eşitlendi.
   Panel, Client ve PanoPOS entegrasyonu bekliyor. Backend kapanışı ve commit/push kullanıcı tarafından onaylandı; canlı yayın yok.

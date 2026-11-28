@@ -1,5 +1,23 @@
 # İstemci API Sözleşmesi (PanoPOS ↔ PanoLicense)
 
+## Güncel hedef ile mevcut uygulama ayrımı — FAZ 6.2a
+
+Ana sözleşme [v2.3 §12](LICENSING_CONTRACT.md) iki repoda aynıdır.
+**Onaylı hedef (henüz uygulanmadı):** süreli/demo/ömür boyu tek v2; zorunlu imzalı license_type;
+term için geçerli expires_at, perpetual için açık null. Aktif v1 üretimi/kabulü kaldırılacak,
+yalnız geçmiş iptal kayıtları dar v1 okuyucusuyla doğrulanacak; ticari/modül/rapor yetkisi vermeyecek.
+Client 1.1.0 hedeflenir; Device Service ve WebApi aynı sürümü kullanacak. Null tek başına süresiz demek değildir.
+
+Offline term/demo için min(issued_at + 7/365 gün, lisans sonu), perpetual için issued_at + 7/365 gündür.
+Demo 14 günlük Pro/tek cihaz/7 gün kalır. İmza, challenge, cihaz bağı, saat, iptal ve eski belge koruması değişmez.
+Yeni Client'ta genel v1/v2 ticari uyumluluk talimatı geçersizdir.
+HTTP /api/v1 ve kanıt amaç metinlerindeki v1 belge sürümünden bağımsızdır; bu kararla değiştirilmez.
+
+**Mevcut kod:** 8b0b5cd Backend hâlâ term/demo v1 ve perpetual v2 üretir; resmî Client 1.0.1 v2 desteklemez.
+Aşağıdaki eski v1/1.0.1 açıklamaları bu uygulanmış sürümü tarif eder; hedef üretim/kabul talimatı değildir.
+Yeni Client 1.1.0, koordineli tüketici dağıtımı ve kabul bekliyor. İki geçici bayrak şimdilik kapalıdır,
+koordineli dağıtım ve kabul sonrasında kaldırılacaktır. TEST kayıtları ve kalıcı güvenlik geçmişi silinmez.
+
 Durum: **F3b güvenlik düzeltmesi** — cihaz sahiplik kanıtı + anahtara bağlı imzalı belge.
 HTTP istemcisi, Windows CNG anahtarı ve korumalı yerel durum F4 ile `LicenseManager` içinde uygulandı (yerel, yayın yok).
 Kurallar: [LICENSING_RULES](LICENSING_RULES.md); uygulama: [ARCHITECTURE](ARCHITECTURE.md).
@@ -192,9 +210,9 @@ PanoLicense sunucusuna yeni uç eklenmedi; bu bölüm Client'ın ürün içi (ö
 - **İptal iletimi:** `GetSignedRevocationDocument()` (cihaz) → `ReadRevocation(zarf)` (sunucu). İmzalı iptal kanıt gerektirmez,
   yalnız kısıtlar; iptal belgesi `Verify` ile ticari kanıt olarak kabul edilmez.
 
-## Ömür boyu Backend / v1-v2 geçişi (FAZ 6.2a.2)
+## Mevcut Backend / tarihsel v1-v2 uygulaması (FAZ 6.2a.2)
 
-Ortak sözleşme v2.2 §12 geçerlidir. Bu bölüm mevcut tarihli v1 anlatımını perpetual için genişletir.
+Bu bölüm 8b0b5cd kodunu tarif eder. Önceki v2.2 kararı tarihçedir; güncel hedef v2.3 §12'dir.
 
 ### Yönetim
 - POST /licenses ve /licenses/{id}/approve: isteğe bağlı license_type (term/perpetual).
@@ -218,7 +236,7 @@ Ortak sözleşme v2.2 §12 geçerlidir. Bu bölüm mevcut tarihli v1 anlatımın
 - v2 valid_until = issued_at + offline_grace_days; v1 min(offline sonu, ticari bitişi izleyen UTC 00:00).
   v2 zamanları UTC, altı basamak kesirli ISO 8601'dir. Aynı saniyedeki v1'den sonra sıralama için
   v2 issued_at'a 1 mikrosaniye eklenir; valid_until aynı issued_at üzerinden hesaplanır.
-  Yeni Client hassasiyeti kesmemeli; v1/v2'yi birlikte okuyup son belge/kalıcı iptal korumasını sürdürmelidir.
+  Önceki çift sürüm ticari okuma talimatı geçersizdir. Yeni Client v2 zaman hassasiyetini, son belge ve kalıcı iptal korumasını koruyacaktır.
 - Kontrol yanıtının snapshot/imzası lisans satır kilidi içinde alınır: eski in-flight nesne,
   dönüşüm tamamlandıktan sonra daha yeni zamanlı v1 üretemez.
 - Client 1.0.1 v2'yi unsupported_version ile reddeder; tüketiciler yükseltilmeden özellik açılmaz.
@@ -229,6 +247,6 @@ Ortak sözleşme v2.2 §12 geçerlidir. Bu bölüm mevcut tarihli v1 anlatımın
   yanıt üretimi 503 signing_unavailable. Süreli v1 ve demo normal çalışır.
 - Production'da yalnız enabled=true yeterli değildir: ayrıca LICENSE_PERPETUAL_PRODUCTION_APPROVED=true gerekir.
   İki değer de varsayılan false. Mevcut .env değiştirilmedi; örnek dosyada yalnız kapalı değerler bulunur.
-- Ayrı yayın onayından önce: yeni Client'ın v1/v2 ve antirollback/iptal kabulü; tüm Device Service ve WebApi
+- Ayrı yayın onayından önce: Client 1.1.0 tek v2, aktif v1 reddi, geçmiş v1 iptal okuması ve antirollback/iptal kabulü; tüm Device Service ve WebApi
   tüketicilerinin yeni Client'a geçişi; panel/Desktop null-tür ayrımı; izole migration kabulü tamamlanmalıdır.
   Bayrak kapatılması önceden verilmiş offline belgeyi geriye dönük iptal etmez.

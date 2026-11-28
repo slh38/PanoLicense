@@ -1,5 +1,13 @@
 # Lisanslama Kuralları (onaylı)
 
+**Güncel lisans karar kaynağı:** [Ortak sözleşme v2.3 §12](LICENSING_CONTRACT.md).
+Ürün müşteriye çıkmadı; tüm lisanslar TEST ve korunacaktır. Süreli/demo/ömür boyu için tek v2,
+hedef Client 1.1.0 ve yalnız geçmiş iptal kayıtları için dar v1 okuması onaylandı; henüz uygulanmadı.
+Aktif v1 ticari desteği ve genel çift sürüm uyumluluğu önceki karardır, yeni geliştirme talimatı değildir.
+Admin-only ömür boyu oluşturma/dönüşüm, yalnız süreli → ömür boyu, bağımsız bakım hakkı (FAZ 7),
+offline/cihaz/imza/iptal/eski belge koruması aynen geçerlidir. Geçici bayraklar kabul sonrası kaldırılacak;
+bu tur mevcut kapalı durum değişmez. Yeni tablo veya gereksiz migration ve kayıt temizliği yapılmayacak.
+
 Bu dosya iş kurallarının tek kaynağıdır. Uygulama ayrıntısı: [ARCHITECTURE.md](ARCHITECTURE.md).
 Kural değişikliği yalnız kullanıcı onayıyla yapılır ve tarihlenir.
 
@@ -134,7 +142,7 @@ _İlk kayıt 2026-11-22; Laravel geçişinde (2026-11-22) yeniden teyit edildi._
 33. Planlanan (henüz geliştirilmemiş) modüller yalnız açıklamada belirtilir; ayrı DB alanı yoktur. PanoPOS tarafı
     kararları (tek lisans + ortak kota, lisans bitince okuma/rapor/yedek açık, modül kapanınca açık işlem tamamlanır):
     LICENSING_CONTRACT §7, §11.
-## Ömür boyu lisans — FAZ 6.2a.2 (2026-11-28, yerel Backend)
+## Ömür boyu lisans — FAZ 6.2a.2 uygulanmış Backend (tek v2 sadeleştirmesi henüz uygulanmadı)
 
 - Tüm paketlerde term/perpetual. Term geçerli bitiş tarihi gerektirir; perpetual açık tür ve null bitiş taşır.
   Eksik/geçersiz tarih süresiz sayılmaz. Mevcut kayıtlar migration ile varsayılan term olur; tarihleri değişmez.
@@ -148,5 +156,5 @@ _İlk kayıt 2026-11-22; Laravel geçişinde (2026-11-22) yeniden teyit edildi._
   365 belgesi bağlantı yokken uzaktan iptal edilemez. Online kontrol politikası değişmez.
 - Oluşturma/dönüşüm audit'i türü; dönüşüm ayrıca önceki tarihi tutar. İptal geçmişi değişmez.
 - Bakım ve güncelleme hakkı ayrı olup FAZ 7'ye bırakıldı.
-- Varsayılan kapalı dağıtım kilidi ve v1/v2 sözleşmesi: CLIENT_API, ortak sözleşme v2.2 §12.
+- Mevcut Backend dağıtım kilidi ve tarihsel v1/v2 uygulaması CLIENT_API'dedir; güncel hedef ortak sözleşme v2.3 §12'dir.
   Panel ve yeni Client henüz bu fazda geliştirilmedi; canlıda açılmamalıdır.

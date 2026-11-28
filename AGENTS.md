@@ -1,5 +1,10 @@
 # PanoLicense — Ajan Giriş Dosyası
 
+**Lisans görevlerinde zorunlu ana karar kaynağı:** [LICENSING_CONTRACT §12](docs/LICENSING_CONTRACT.md#12-güncel-lisans-kararı--tek-v2-faz-62a-onaylandi-uygulama-bekliyor)
+v2.3'tür (iki repoda birebir aynı). Tek v2 belge ve Client 1.1.0 onaylanmış hedeflerdir;
+uygulanmış durum STATUS ve ilgili entegrasyon/API belgesinden okunur. §13'teki eski çift sürüm
+kararı tarihçedir; aktif v1 ticari destek talimatı değildir. Bakım uygulaması FAZ 7'de kalır.
+
 PanoLicense: Joker Yazılım ürünlerinin (ilk olarak PanoPOS) lisanslarını yöneten **bağımsız**
 lisans sunucusu, yönetim paneli ve istemci kütüphanesi.
 

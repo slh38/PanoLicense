@@ -1,5 +1,11 @@
 # Mimari
 
+**FAZ 6.2a güncel hedef:** ortak sözleşme v2.3 §12'deki tek v2 / Client 1.1.0 kararı onaylıdır,
+henüz kodlanmadı. Aşağıdaki v1 ve F3/F4 kayıtları mevcut/tarihsel uygulamayı anlatır; çift sürüm
+ticari destek için yeni talimat değildir. Sadece geçmiş iptalleri doğrulayan dar v1 okuması korunacak.
+İmza, cihaz anahtarı, audit, güvenilir saat ve eski belge koruması korunacak; yeni tablo/ gereksiz
+migration yoktur. TEST kayıtları silinmez. Geçici bayraklar koordineli dağıtım/kabul sonrası kaldırılacak.
+
 Kurallar (ne olacağı) [LICENSING_RULES.md](LICENSING_RULES.md)'dedir; bu dosya nasıl uygulanacağını anlatır.
 ✅ = uygulandı, 🔜 = planlı (henüz kod yok).
 
@@ -289,7 +295,7 @@ licenses.license_type varchar(20) NOT NULL DEFAULT term; expires_at nullable DAT
 down güvenli biçimde durur; yapay tarih veya kayıt silme yoktur. Yalnız izole panolicense_test üzerinde doğrulandı.
 
 Ömür boyu izin kararı açık tür + null tarihi birlikte gerektirir. İş kuralları LICENSING_RULES son bölümde,
-v1/v2 ve dağıtım kilidi CLIENT_API'dedir. §7/§10'daki ticari lisans bitiş sınırı term için uygulanır.
+mevcut v1/v2 üretimi ve dağıtım kilidi CLIENT_API'dedir; hedef tek v2 sözleşmesi v2.3 §12'dedir. §7/§10'daki ticari lisans bitiş sınırı term için uygulanır.
 §6'daki online kontrol okumasına ek olarak yanıt snapshot/imzası kısa lisans satır kilidi içinde alınır;
 dönüşümle belge sıralamasını korur. Satış akışına sorgu/yazım eklenmedi. Yeni servis/bağımlılık yoktur.
 Yeni Client ve PanoPOS tüketicileri bu fazda uygulanmadı; özellik varsayılan kapalıdır.

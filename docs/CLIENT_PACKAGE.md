@@ -1,5 +1,12 @@
 # PanoLicense.Client NuGet Paketi
 
+**FAZ 6.2a onaylı hedef (paket henüz üretilmedi):** PanoLicense.Client **1.1.0**,
+tek v2 kullanım belgesi; aktif v1 ticari kabulü yok, yalnız geçmiş iptal okumaya dar v1 desteği.
+Device Service ve WebApi aynı sabit sürüme geçecektir. Güncel karar ortak sözleşme v2.3 §12'dir.
+Ürün satışa çıkmadığından ticari geriye uyumluluk zorunlu değildir; 1.1.0 sürüm numarası ürün sahibince
+bu geçiş için açıkça onaylanmıştır. Aşağıdaki 1.0.1 sürümü/hash kaydı mevcut resmî paket tarihçesidir;
+yeni geçişte 1.0.1 kullanma talimatı değildir. 1.1.0 hash/kaynak kaydı paket üretiminden sonra doldurulacak.
+
 Sürüm: **1.0.1** (resmî) · Hedef: `net8.0` (bağımlılık yok) · Uyumluluk: .NET 8 (PanoPOS WebApi) ve .NET 10 (PanoPOS Device Service)
 doğrulandı (2026-11-28). Kullanım rehberi PanoPOS tarafında: `PanoPos/docs/LICENSING_INTEGRATION.md` §3.
 
